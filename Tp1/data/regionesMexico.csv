@@ -1,33 +1,3 @@
-provincia,región
-Aguascalientes,Centronorte
-Baja California Sur,Noroeste
-Baja California Norte,Noroeste
-Campeche,Sureste
-Chiapas,Suroeste
-Chihuahua,Noroeste
-Coahuila,Noreste
-Colima,Oeste
-Distrito Federal,Centrosur
-Durango,Noroeste
-Edo. de México,Centrosur
-Guanajuato,Centronorte
-Guerrero,Suroeste
-Hidalgo,Este
-Jalisco,Oeste
-Michoacán,Oeste
-Morelos,Centrosur
-Nayarit,Oeste
-Nuevo León,Noreste
-Oaxaca,Suroeste
-Puebla,Este
-Querétaro,Centronorte
-Quintana Roo,Sureste
-San luis Potosí,Centronorte
-Sinaloa,Noroeste
-Sonora,Noroeste
-Tabasco,Sureste
-Tamaulipas,Noreste
-Tlaxcala,Este
-Veracruz,Este
-Yucatán,Sureste
-Zacatecas,Centronorte
+version https://git-lfs.github.com/spec/v1
+oid sha256:b6968bfba9aab690ad3fa9ef43ba791b3683a29bc997cfd0c66e12470776c70c
+size 631
