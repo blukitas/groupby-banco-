@@ -18,17 +18,20 @@ class Inicializacion():
     # Encoder = 0 #Binario
     # Encoder = 1 #One Hot Encoding
     def __init__(self, encoder=0):
+        self.encoder = encoder
         print("Inicializando dataframes")
         df = pd.read_csv('data/train.csv')
         df_test = pd.read_csv('data/test.csv')
-        return self.operaciones(df, encoder), self.operaciones(df_test, encoder)
+        self.operaciones(df)
+        #return self.operaciones(df), self.operaciones(df_test)
 
-    def operaciones(self, df, encoder):
-        df = self.casteos(self, df)
-        df = self.tratamiento_nulls(self, df)
-        df = self.encoding(self, df, encoder)
-        df = self.features_engineering(self, df)
-        df = self.predict_nulls(self, df)
+    def operaciones(self, df):
+        print("Comenzando operaciones")
+        df = self.casteos(df)
+        df = self.tratamiento_nulls(df)
+        df = self.encoding(df)
+        df = self.features_engineering(df)
+        # df = self.predict_nulls(self, df)
         return df
 
     def timer(self, start_time=None):
@@ -41,6 +44,7 @@ class Inicializacion():
             print('\n Time taken: %i hours %i minutes and %s seconds.' % (thour, tmin, round(tsec, 2)))
 
     def casteos(self, df):
+        print("\t Cast")
         # Casteamos los dtypes a los correctos.
         return df.astype({
             "piscina": 'int16',
@@ -58,19 +62,23 @@ class Inicializacion():
         })
 
     def tratamiento_nulls(self, df):
+        print("\t Nulls")
         df = self.drop_cols(self, df)
         df = self.drop_nan(self, df)
         df = self.fill_metros(self, df)
         return df
 
     def drop_cols(self, df):
+        print("\t\t Drop cols")
         # Latitud y Longitud son importantes pero la cantidad de nulls es muy grande
         return df.drop(columns=['lat', 'lng', 'titulo', 'descripcion', 'id', 'idzona', 'direccion'], inplace=True)
 
     def drop_nan(self, df):
+        print("\t\t Drop nan")
         return df.dropna(subset=['tipodepropiedad', 'provincia', 'ciudad'], inplace=True)
 
     def fill_metros(self, df):
+        print("\t\t Fill metros")
         # Terreno null
         df1 = df[df.tipodepropiedad == 'Terreno'].fillna(0)
         df = df[df.tipodepropiedad != 'Terreno']
@@ -99,7 +107,7 @@ class Inicializacion():
         df = self.fill_xgboost(self, df, 'antiguedad', True)
         return df
 
-    def fill_xgboost(self, df, feature, continua = False):
+    def fill_xgboost(self, df, feature, continua=False):
         # Columnas relevantes
         cols = ['tipodepropiedad', 'ciudad', 'provincia', 'antiguedad', 'habitaciones',
                 'banos', 'metroscubiertos', 'metrostotales', 'fecha',
@@ -133,7 +141,7 @@ class Inicializacion():
             'n_estimators': [150, 250, 300, 500]}
         if continua:
             xgb = XGBRegressor(learning_rate=0.01,
-                                silent=False, nthread=1)
+                               silent=False, nthread=1)
         else:
             xgb = XGBClassifier(learning_rate=0.01,
                                 silent=False, nthread=1)
@@ -154,16 +162,17 @@ class Inicializacion():
 
         print(random_search.score)
 
-    def encoding(self, df, encoder):
+    def encoding(self, df):
+        print("\t Encoding")
         catlist = ['tipodepropiedad', 'ciudad', 'provincia']
         # 0 - Binario
         # 1 - One hot Encoding
-        if encoder == 0:
+        if self.encoder == 0:
             # Binary Encoding
             binary_enc = ce.BinaryEncoder()
             binary_encoded = binary_enc.fit_transform(df[catlist])
             df = df.join(binary_encoded.add_suffix('bc'))
-        elif encoder == 1:
+        elif self.encoder == 1:
             # One hot Encoding
             one_hot_enc = ce.OneHotEncoder()
             one_hot_encoded = one_hot_enc.fit_transform(df[catlist])
@@ -172,6 +181,7 @@ class Inicializacion():
         return df.drop(columns=catlist, inplace=True)
 
     def features_engineering(self, df):
+        print("\t Features engineering")
         # Partir fecha
         df.assign(
             day=df.fecha.dt.day,
