@@ -1,3 +1,4 @@
+from datetime import datetime
 import pickle
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -41,11 +42,13 @@ class Prediction:
 
 
 if __name__ == '__main__':
+    prefix = 'knntest' + datetime.now().strftime('%m-%d-%H:%M')
+    print(prefix)
     data = (pd.read_csv('data/train.csv', index_col=['id'], parse_dates=['fecha'], error_bad_lines=False),
             pd.read_csv('data/test.csv', index_col=['id'], parse_dates=['fecha'], error_bad_lines=False))
     distances = ['euclidean', 'manhattan', 'chebyshev', 'minkowski']
     param_grid = {'n_neighbors': np.arange(15, 34, 2), 'metric': distances}
-    model = Prediction(data, KNeighborsRegressor(), param_grid, 'knntest')
+    model = Prediction(data, KNeighborsRegressor(), param_grid, prefix)
     model.train()
     model.save()
     model.submit()
