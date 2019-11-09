@@ -16,7 +16,7 @@ class Prediction:
         self.train_df, self.test_df  = data
         self.model = model
         self.param_grid = param_grid
-        self.prefix = prefix
+        self.prefix = prefix + datetime.now().strftime('%m-%d-%H:%M')
         self.X = self.train_df.loc[:,  self.train_df.columns != 'precio']
         self.y = self.train_df['precio'].values
         #self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X, 
@@ -42,13 +42,11 @@ class Prediction:
 
 
 if __name__ == '__main__':
-    prefix = 'knntest' + datetime.now().strftime('%m-%d-%H:%M')
-    print(prefix)
     data = (pd.read_csv('data/train.csv', index_col=['id'], parse_dates=['fecha'], error_bad_lines=False),
             pd.read_csv('data/test.csv', index_col=['id'], parse_dates=['fecha'], error_bad_lines=False))
     distances = ['euclidean', 'manhattan', 'chebyshev', 'minkowski']
     param_grid = {'n_neighbors': np.arange(15, 34, 2), 'metric': distances}
-    model = Prediction(data, KNeighborsRegressor(), param_grid, prefix)
+    model = Prediction(data, KNeighborsRegressor(), param_grid, 'knntest')
     model.train()
     model.save()
     model.submit()
