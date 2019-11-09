@@ -12,6 +12,7 @@ from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 from datetime import datetime
+import pickle
 
 
 class Inicializacion():
@@ -23,8 +24,9 @@ class Inicializacion():
         df = pd.read_csv('data/train.csv')
         df_test = pd.read_csv('data/test.csv')
         self.df_final = self.operaciones(df)
-        self.df_final_test = self.operaciones(df_test)
+        #self.df_final_test = self.operaciones(df_test)
         # return self.operaciones(df), self.operaciones(df_test)
+        # TODO: Opcion de salida de CSV y modelos, para evitar perder el tiempo de computo
 
     def operaciones(self, df):
         print("Comenzando operaciones")
@@ -32,17 +34,8 @@ class Inicializacion():
         df = self.encoding(df)
         df = self.casteos(df)
         df = self.features_engineering(df)
-        # df = self.predict_nulls(self, df)
+        df = self.predict_nulls(df)
         return df
-
-    def timer(self, start_time=None):
-        if not start_time:
-            start_time = datetime.now()
-            return start_time
-        elif start_time:
-            thour, temp_sec = divmod((datetime.now() - start_time).total_seconds(), 3600)
-            tmin, tsec = divmod(temp_sec, 60)
-            print('\n Time taken: %i hours %i minutes and %s seconds.' % (thour, tmin, round(tsec, 2)))
 
     def casteos(self, df):
         print("\t Cast")
@@ -56,9 +49,9 @@ class Inicializacion():
             #    "antiguedad": 'int16',
             #    "habitaciones": 'int16',
             #    "banos": 'int16',
-            #    "metroscubiertos": 'int16',
-            #    "metrostotales": 'int16',
             #    'garages': 'int16',
+            "metroscubiertos": 'int16',
+            "metrostotales": 'int16',
             "fecha": np.datetime64
         })
 
@@ -106,21 +99,47 @@ class Inicializacion():
 
     def predict_nulls(self, df):
         df = self.fill_xgboost(df, 'garages')
-        df = self.fill_xgboost(df, 'habitaciones')
-        df = self.fill_xgboost(df, 'banos')
-        df = self.fill_xgboost(df, 'antiguedad', True)
+        # df = self.fill_xgboost(df, 'habitaciones')
+        # df = self.fill_xgboost(df, 'banos')
+        # df = self.fill_xgboost(df, 'antiguedad', True)
         return df
 
     def fill_xgboost(self, df, feature, continua=False):
+        # TODO: Format para encoding
         # Columnas relevantes
-        cols = ['tipodepropiedad', 'ciudad', 'provincia', 'antiguedad', 'habitaciones',
-                'banos', 'metroscubiertos', 'metrostotales', 'fecha',
+        cols = ['antiguedad', 'habitaciones',
+                'tipodepropiedad_0bc',
+                'tipodepropiedad_1bc',
+                'tipodepropiedad_2bc',
+                'tipodepropiedad_3bc',
+                'tipodepropiedad_4bc',
+                'tipodepropiedad_5bc',
+                'ciudad_0bc',
+                'ciudad_1bc',
+                'ciudad_2bc',
+                'ciudad_3bc',
+                'ciudad_4bc',
+                'ciudad_5bc',
+                'ciudad_6bc',
+                'ciudad_7bc',
+                'ciudad_8bc',
+                'ciudad_9bc',
+                'ciudad_10bc',
+                'provincia_0bc',
+                'provincia_1bc',
+                'provincia_2bc',
+                'provincia_3bc',
+                'provincia_4bc',
+                'provincia_5bc',
+                'banos', 'metroscubiertos', 'metrostotales',
                 'gimnasio', 'garages', 'usosmultiples', 'piscina', 'escuelascercanas',
-                'centroscomercialescercanos', 'precio']
+                'centroscomercialescercanos']
+        # Sin fecha y sin precio
         # Usamos todas la que queremos predecir
         cols_subset = [x for x in cols if x != feature]
 
         df_train = df.dropna()
+        # df_train
         df_test = df.loc[df[feature].isnull() == True]
         df_test = (df_test.dropna(subset=cols_subset))
 
@@ -150,8 +169,9 @@ class Inicializacion():
             xgb = XGBClassifier(learning_rate=0.01,
                                 silent=False, nthread=1)
 
-        folds = 7
-        param_comb = 4
+        # TODO: Folds y param_comb como parametros.
+        folds = 2
+        param_comb = 1
 
         skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=1001)
 
@@ -160,11 +180,27 @@ class Inicializacion():
                                            cv=skf.split(df_train_x, df_train_y), verbose=3, random_state=1001)
 
         # Here we go
-        start_time = timer(None)  # timing starts from this point for "start_time" variable
+        #start_time = timer(None)  # timing starts from this point for "start_time" variable
         random_search.fit(df_train_x, df_train_y)
-        self.timer(start_time)  # timing ends here for "start_time" variable
-
         print(random_search.score)
+
+        df_test_x[feature+'_xgb'] = random_search.predict(df_test_x)
+
+        # df = df con modelo aplicado.
+        df = pd.merge(df, df_test_x[feature+'_xgb'], how='left', left_index=True, right_index=True)
+        df[feature] = np.where((df[feature].isnull() == True), df[feature+'_xgb'], df[feature])
+        df.drop(columns=[feature+'_xgb'])
+        self.df_xgb = df
+        #self.timer(start_time)  # timing ends here for "start_time" variable
+
+        # Dictionary of best parameters
+        best_pars = random_search.best_params_
+        # Best XGB model that was found based on the metric score you specify
+        best_model = random_search.best_estimator_
+        # Save model
+        pickle.dump(random_search.best_estimator_, open("xgb_" + feature + ".pickle", "wb"))
+
+        return df
 
     def encoding(self, df):
         print("\t Encoding")
@@ -187,12 +223,36 @@ class Inicializacion():
     def features_engineering(self, df):
         print("\t Features engineering")
         # Partir fecha
-
+        print("\t\t Separar fecha")
         df.assign(
             day=df.fecha.dt.day,
             month=df.fecha.dt.month,
             year=df.fecha.dt.year)
         return df.drop(columns='fecha')  # , inplace=True)
+
+    def timer(self, start_time=None):
+        if not start_time:
+            start_time = datetime.now()
+            return start_time
+        elif start_time:
+            thour, temp_sec = divmod((datetime.now() - start_time).total_seconds(), 3600)
+            tmin, tsec = divmod(temp_sec, 60)
+            print('\n Time taken: %i hours %i minutes and %s seconds.' % (thour, tmin, round(tsec, 2)))
+
+    def mostar_nulls(self, df):
+        nulls = pd.DataFrame((df.isnull().sum().sort_values() / len(df) * 100).round(2), columns=['porcentaje de NaN'])
+        nulls.drop(nulls.loc[nulls.loc[:, 'porcentaje de NaN'] <= 0].index, inplace=True)
+        plt.figure(figsize=(12, 8))
+        ax = nulls['porcentaje de NaN'].plot.barh()
+        ax.set_title('Porcentaje de valores nulos en cada columna', fontsize=20, y=1.02)
+        ax.set_xlabel('Porcentaje del total %', fontsize=16)
+        ax.set_ylabel('columnas', fontsize=16)
+        ax.grid(axis='x')
+
+        for y, x in enumerate(nulls['porcentaje de NaN']):
+            ax.text(x, y, s=str(x) + '%', color='black', fontweight='bold', va='center')
+
+        plt.show()
 
 
 if __name__ == '__main__':
