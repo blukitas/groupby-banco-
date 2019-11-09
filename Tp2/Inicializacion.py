@@ -22,14 +22,15 @@ class Inicializacion():
         print("Inicializando dataframes")
         df = pd.read_csv('data/train.csv')
         df_test = pd.read_csv('data/test.csv')
-        self.operaciones(df)
-        #return self.operaciones(df), self.operaciones(df_test)
+        self.df_final = self.operaciones(df)
+        self.df_final_test = self.operaciones(df_test)
+        # return self.operaciones(df), self.operaciones(df_test)
 
     def operaciones(self, df):
         print("Comenzando operaciones")
-        df = self.casteos(df)
         df = self.tratamiento_nulls(df)
         df = self.encoding(df)
+        df = self.casteos(df)
         df = self.features_engineering(df)
         # df = self.predict_nulls(self, df)
         return df
@@ -52,34 +53,34 @@ class Inicializacion():
             "escuelascercanas": 'int16',
             "centroscomercialescercanos": 'int16',
             "gimnasio": 'int16',
-            "antiguedad": 'int16',
-            "habitaciones": 'int16',
-            "banos": 'int16',
-            "metroscubiertos": 'int16',
-            "metrostotales": 'int16',
-            'garages': 'int16',
+            #    "antiguedad": 'int16',
+            #    "habitaciones": 'int16',
+            #    "banos": 'int16',
+            #    "metroscubiertos": 'int16',
+            #    "metrostotales": 'int16',
+            #    'garages': 'int16',
             "fecha": np.datetime64
         })
 
     def tratamiento_nulls(self, df):
         print("\t Nulls")
-        df = self.drop_cols(self, df)
-        df = self.drop_nan(self, df)
-        df = self.fill_metros(self, df)
+        df = self.drop_cols(df)
+        df = self.drop_nan(df)
+        df = self.fill_metros(df)
         return df
 
     def drop_cols(self, df):
         print("\t\t Drop cols")
         # Latitud y Longitud son importantes pero la cantidad de nulls es muy grande
-        return df.drop(columns=['lat', 'lng', 'titulo', 'descripcion', 'id', 'idzona', 'direccion'], inplace=True)
+        return df.drop(columns=['lat', 'lng', 'titulo', 'descripcion', 'id', 'idzona', 'direccion'])  # , inplace=True)
 
     def drop_nan(self, df):
         print("\t\t Drop nan")
-        return df.dropna(subset=['tipodepropiedad', 'provincia', 'ciudad'], inplace=True)
+        return df.dropna(subset=['tipodepropiedad', 'provincia', 'ciudad'])  # , inplace=True)
 
     def fill_metros(self, df):
         print("\t\t Fill metros")
-        # Terreno null
+        print("\t\t\t Terreno")
         df1 = df[df.tipodepropiedad == 'Terreno'].fillna(0)
         df = df[df.tipodepropiedad != 'Terreno']
         df = pd.concat([df, df1])
@@ -87,24 +88,27 @@ class Inicializacion():
         cond1 = (df.tipodepropiedad == 'Terreno') & (df.metroscubiertos != 0)
         df.metroscubiertos = np.where(cond1, 0, df.metroscubiertos)
 
-        # Apartamento
+        print("\t\t\t Apartamento")
         cond = (df.tipodepropiedad == 'Apartamento') & (df.metrostotales.isnull())
         df.metrostotales = np.where(cond, df.metroscubiertos, df.metrostotales)
 
+        print("\t\t\t Metros cubiertos null")
         # Metros totales = metros cubiertos SI es null
         df.metrostotales = np.where(df.metrostotales.isnull(), df.metroscubiertos, df.metrostotales)
+        print("\t\t\t Metros totales null")
         # Metros cubiertos = metros totales SI es null
         df.metroscubiertos = np.where(df.metroscubiertos.isnull(), df.metrostotales, df.metroscubiertos)
 
+        print("\t\t\t Terreno comercial")
         df1 = df[df.tipodepropiedad == 'Terreno comercial'].fillna(0)
         df = df[df.tipodepropiedad != 'Terreno comercial']
         return pd.concat([df, df1])
 
     def predict_nulls(self, df):
-        df = self.fill_xgboost(self, df, 'garages')
-        df = self.fill_xgboost(self, df, 'habitaciones')
-        df = self.fill_xgboost(self, df, 'banos')
-        df = self.fill_xgboost(self, df, 'antiguedad', True)
+        df = self.fill_xgboost(df, 'garages')
+        df = self.fill_xgboost(df, 'habitaciones')
+        df = self.fill_xgboost(df, 'banos')
+        df = self.fill_xgboost(df, 'antiguedad', True)
         return df
 
     def fill_xgboost(self, df, feature, continua=False):
@@ -178,13 +182,18 @@ class Inicializacion():
             one_hot_encoded = one_hot_enc.fit_transform(df[catlist])
             df = df.join(one_hot_encoded.add_suffix('oh'))
 
-        return df.drop(columns=catlist, inplace=True)
+        return df.drop(columns=catlist)  # , inplace=True)
 
     def features_engineering(self, df):
         print("\t Features engineering")
         # Partir fecha
+
         df.assign(
             day=df.fecha.dt.day,
             month=df.fecha.dt.month,
             year=df.fecha.dt.year)
-        return df.drop(columns='fecha', inplace=True)
+        return df.drop(columns='fecha')  # , inplace=True)
+
+
+if __name__ == '__main__':
+    Inicializacion.Inicilizacion(0)
