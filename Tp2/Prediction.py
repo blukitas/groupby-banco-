@@ -8,8 +8,6 @@ from sklearn.neighbors import KNeighborsRegressor
 import numpy as np
 #import Inicializacion
 
-data = (pd.read_csv('data/train.csv', index_col=['id'], parse_dates=['fecha'], error_bad_lines=False),
-	    pd.read_csv('data/test.csv', index_col=['id'], parse_dates=['fecha'], error_bad_lines=False))
 
 class Prediction:
 
@@ -18,11 +16,10 @@ class Prediction:
         self.model = model
         self.param_grid = param_grid
         self.prefix = prefix
-        self.X =  self.train_df.loc[:,  self.train_df.columns != 'precio']
-        self.y =  self.train_df['precio'].values
-
-        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X, 
-        	self.y, test_size=0.2, random_state=1)
+        self.X = self.train_df.loc[:,  self.train_df.columns != 'precio']
+        self.y = self.train_df['precio'].values
+        #self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(self.X, 
+        #	self.y, test_size=0.2, random_state=1)
 
     def train(self):
         print('Training...')
@@ -34,7 +31,7 @@ class Prediction:
         print(self.best_params)
         print(self.score)
 
-    def save(self)
+    def save(self):
         with open('{}.model'.format(self.prefix),'wb') as f:
             pickle.dump(self.gscv, f)
 
@@ -44,6 +41,8 @@ class Prediction:
 
 
 if __name__ == '__main__':
+    data = (pd.read_csv('data/train.csv', index_col=['id'], parse_dates=['fecha'], error_bad_lines=False),
+            pd.read_csv('data/test.csv', index_col=['id'], parse_dates=['fecha'], error_bad_lines=False))
     distances = ['euclidean', 'manhattan', 'chebyshev', 'minkowski']
     param_grid = {'n_neighbors': np.arange(15, 34, 2), 'metric': distances}
     model = Prediction(data, KNeighborsRegressor(), param_grid, 'knntest')
