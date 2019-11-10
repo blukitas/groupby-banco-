@@ -98,16 +98,19 @@ class Inicializacion():
         return pd.concat([df, df1])
 
     def predict_nulls(self, df):
+        print('Entrenando garages')
         df = self.fill_xgboost(df, 'garages')
-        # df = self.fill_xgboost(df, 'habitaciones')
-        # df = self.fill_xgboost(df, 'banos')
-        # df = self.fill_xgboost(df, 'antiguedad', True)
+        print('Entrenando habitaciones')
+        df = self.fill_xgboost(df, 'habitaciones')
+        print('Entrenando baños')
+        df = self.fill_xgboost(df, 'banos')
+        print('Entrenando antiguedad.')
+        df = self.fill_xgboost(df, 'antiguedad', True)
         return df
 
     def fill_xgboost(self, df, feature, continua=False):
         # TODO: Format para encoding
         # Columnas relevantes
-        print('Separando los datos.')
         cols = ['antiguedad', 'habitaciones',
                 'tipodepropiedad_0bc',
                 'tipodepropiedad_1bc',
@@ -167,8 +170,10 @@ class Inicializacion():
             'learning_rate': [0.001,0.01,0.03]}
         if continua:
             xgb = XGBRegressor()
+            scoring = 'neg_mean_squared_error'
         else:
             xgb = XGBClassifier()
+            scoring = 'accuracy'
 
         # TODO: Folds y param_comb como parametros.
         folds = 2
@@ -176,12 +181,11 @@ class Inicializacion():
 
         skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=1001)
 
-        random_search = RandomizedSearchCV(xgb, param_distributions=params, n_iter=param_comb, scoring='accuracy',
+        random_search = RandomizedSearchCV(xgb, param_distributions=params, n_iter=param_comb, scoring=scoring,
                                            n_jobs=-1,
                                            cv=skf.split(df_train_x, df_train_y), random_state=1001)
 
         # Here we go
-        print('Empezando entrenamiento.')
         start_time = self.timer(None)  # timing starts from this point for "start_time" variable
         random_search.fit(df_train_x, df_train_y)
         df_test_x[feature+'_xgb'] = random_search.predict(df_test_x)
@@ -265,6 +269,9 @@ class Inicializacion():
             ax.text(x, y, s=str(x) + '%', color='black', fontweight='bold', va='center')
 
         plt.show()
+
+    
+
 
 
 if __name__ == '__main__':
