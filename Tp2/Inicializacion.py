@@ -107,6 +107,7 @@ class Inicializacion():
     def fill_xgboost(self, df, feature, continua=False):
         # TODO: Format para encoding
         # Columnas relevantes
+        print('Separando los datos.')
         cols = ['antiguedad', 'habitaciones',
                 'tipodepropiedad_0bc',
                 'tipodepropiedad_1bc',
@@ -155,19 +156,19 @@ class Inicializacion():
         df_test_x = df_test_x.loc[:, cols_subset]
 
         # Modelo - XGBoost
+        # Los parametros son fruta, estan puestos solo para hacer pruebas.
         params = {
             'min_child_weight': [5],
-            'gamma': [1],
+            'gamma': [0.5],
             'subsample': [0.8],
             'colsample_bytree': [0.8],
-            'max_depth': [5],
-            'n_estimators': [150, 250, 300, 500]}
+            'max_depth': [4],
+            'n_estimators': [50],
+            'learning_rate': [0.001,0.01,0.03]}
         if continua:
-            xgb = XGBRegressor(learning_rate=0.01,
-                               silent=False, nthread=1)
+            xgb = XGBRegressor()
         else:
-            xgb = XGBClassifier(learning_rate=0.01,
-                                silent=False, nthread=1)
+            xgb = XGBClassifier()
 
         # TODO: Folds y param_comb como parametros.
         folds = 2
@@ -176,25 +177,36 @@ class Inicializacion():
         skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=1001)
 
         random_search = RandomizedSearchCV(xgb, param_distributions=params, n_iter=param_comb, scoring='accuracy',
-                                           n_jobs=4,
-                                           cv=skf.split(df_train_x, df_train_y), verbose=3, random_state=1001)
+                                           n_jobs=-1,
+                                           cv=skf.split(df_train_x, df_train_y), random_state=1001)
 
         # Here we go
-        #start_time = timer(None)  # timing starts from this point for "start_time" variable
+        print('Empezando entrenamiento.')
+        start_time = self.timer(None)  # timing starts from this point for "start_time" variable
         random_search.fit(df_train_x, df_train_y)
-        print(random_search.score)
-
         df_test_x[feature+'_xgb'] = random_search.predict(df_test_x)
 
         # df = df con modelo aplicado.
         df = pd.merge(df, df_test_x[feature+'_xgb'], how='left', left_index=True, right_index=True)
         df[feature] = np.where((df[feature].isnull() == True), df[feature+'_xgb'], df[feature])
-        df.drop(columns=[feature+'_xgb'])
+        df.drop(columns=[feature+'_xgb'],inplace=True)
         self.df_xgb = df
-        #self.timer(start_time)  # timing ends here for "start_time" variable
+        self.timer(start_time)  # timing ends here for "start_time" variable
+
+        # Resultados CV
+        results = random_search.cv_results_
+        results = pd.DataFrame(results)
+        results.to_csv('cv_results_'+feature+'.csv')
+
 
         # Dictionary of best parameters
         best_pars = random_search.best_params_
+        print(' Los mejores parametros son: ')
+        print(best_pars)
+        print('------------------------')
+        print('Best score: ')
+        print(random_search.best_score_)
+
         # Best XGB model that was found based on the metric score you specify
         best_model = random_search.best_estimator_
         # Save model
