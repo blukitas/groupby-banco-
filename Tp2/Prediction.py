@@ -7,7 +7,7 @@ from sklearn.model_selection import GridSearchCV
 #from sklearn.metrics import mean_absolute_error
 from sklearn.neighbors import KNeighborsRegressor
 import numpy as np
-#import Inicializacion
+from Inicializacion import *
 
 
 class Prediction:
@@ -42,8 +42,8 @@ class Prediction:
 
 
 if __name__ == '__main__':
-    data = (pd.read_csv('data/train.csv', index_col=['id'], parse_dates=['fecha'], error_bad_lines=False),
-            pd.read_csv('data/test.csv', index_col=['id'], parse_dates=['fecha'], error_bad_lines=False))
+    preprocesamiento = Inicializacion()
+    data = (preprocesamiento.df_final, preprocesamiento.df_final_test) 
     distances = ['euclidean', 'manhattan', 'chebyshev', 'minkowski']
     param_grid = {'n_neighbors': np.arange(15, 34, 2), 'metric': distances}
     model = Prediction(data, KNeighborsRegressor(), param_grid, 'knntest')
