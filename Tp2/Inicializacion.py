@@ -13,7 +13,7 @@ from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 from datetime import datetime
 import pickle
-
+import os
 
 class Inicializacion():
     # Encoder = 0 #Binario
@@ -265,7 +265,7 @@ class Inicializacion():
             tmin, tsec = divmod(temp_sec, 60)
             print('\n Time taken: %i hours %i minutes and %s seconds.' % (thour, tmin, round(tsec, 2)))
 
-    def mostar_nulls(self, df):
+    def mostrar_nulls(self, df,feature,save=False):
         nulls = pd.DataFrame((df.isnull().sum().sort_values() / len(df) * 100).round(2), columns=['porcentaje de NaN'])
         nulls.drop(nulls.loc[nulls.loc[:, 'porcentaje de NaN'] <= 0].index, inplace=True)
         plt.figure(figsize=(12, 8))
@@ -277,6 +277,18 @@ class Inicializacion():
 
         for y, x in enumerate(nulls['porcentaje de NaN']):
             ax.text(x, y, s=str(x) + '%', color='black', fontweight='bold', va='center')
+
+        script_dir = os.path.dirname(__file__)
+        plots_dir = os.path.join(script_dir, 'plots/')
+        file_name = feature
+
+        if not os.path.isdir(plots_dir):
+            os.makedirs(plots_dir)
+
+        if save == True:
+            plt.savefig(plots_dir+file_name+'.png')
+        else:
+            pass
 
         plt.show()
 
