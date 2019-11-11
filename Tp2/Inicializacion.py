@@ -20,7 +20,9 @@ class Inicializacion():
     # Encoder = 1 #One Hot Encoding
     def __init__(self, encoder=0):
         self.encoder = encoder
-
+        # TODO: Modo verboso para informe, generando png de los gráfico de nulls, o bien escribiendo y poniendolo en
+        #       la pantalla
+        # TODO: Params como diccionario de parametros
         print("Inicializando dataframes")
         df = pd.read_csv('data/train.csv')
         df_test = pd.read_csv('data/test.csv')
@@ -33,7 +35,7 @@ class Inicializacion():
         self.df_final_test.to_csv('01-df_final_test.csv')
 
     def getDataframes(self):
-        return self.df_final , self.df_final_test
+        return self.df_final, self.df_final_test
 
     def operaciones(self, df):
         print("Comenzando operaciones")
@@ -42,6 +44,8 @@ class Inicializacion():
         df = self.casteos(df)
         df = self.features_engineering(df)
         df = self.predict_nulls(df)
+        # Drop nan que quedaron pos limpieza y tratamientos
+        df = df.dropna()
         return df
 
     def casteos(self, df):
@@ -110,13 +114,11 @@ class Inicializacion():
         df = self.fill_xgboost(df, 'banos')
         df = self.fill_xgboost(df, 'habitaciones')
         df = self.fill_xgboost(df, 'antiguedad', True)
-        print(df.shape)
-        print(df.info())
         return df
 
     def fill_xgboost(self, df, feature, continua=False):
         print("\t\t\t fill with xgboost. Feature: ", {feature})
-        # TODO: Format para encoding
+        # TODO: Format columnas según encoding usado
         # Columnas relevantes
         cols = ['antiguedad', 'habitaciones',
                 'tipodepropiedad_0bc',
@@ -183,6 +185,7 @@ class Inicializacion():
             scoring = 'accuracy'
 
         # TODO: Folds y param_comb como parametros.
+        # TODO: Parametro que levante el último modelo generado y use eso?
         folds = 2
         param_comb = 1
 
@@ -198,7 +201,7 @@ class Inicializacion():
         df_test_x[feature + '_xgb'] = random_search.predict(df_test_x)
 
         # df = df con modelo aplicado.
-        df = pd.merge(df, df_test_x[feature + '_xgb'], how='left', left_index=True, right_index=True)
+        df = pd.merge(df, df_test_x[feature + '_xgb'].to_frame(), how='left', left_index=True, right_index=True)
         df[feature] = np.where((df[feature].isnull() == True), df[feature + '_xgb'], df[feature])
         df.drop(columns=[feature + '_xgb'], inplace=True)
         self.df_xgb = df
@@ -239,6 +242,7 @@ class Inicializacion():
             one_hot_enc = ce.OneHotEncoder()
             one_hot_encoded = one_hot_enc.fit_transform(df[catlist])
             df = df.join(one_hot_encoded.add_suffix('oh'))
+        # TODO: Otros encodings?
 
         return df.drop(columns=catlist)  # , inplace=True)
 
