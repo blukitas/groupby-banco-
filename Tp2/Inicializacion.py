@@ -20,13 +20,20 @@ class Inicializacion():
     # Encoder = 1 #One Hot Encoding
     def __init__(self, encoder=0):
         self.encoder = encoder
+
         print("Inicializando dataframes")
         df = pd.read_csv('data/train.csv')
         df_test = pd.read_csv('data/test.csv')
+
         self.df_final = self.operaciones(df)
-        #self.df_final_test = self.operaciones(df_test)
-        # return self.operaciones(df), self.operaciones(df_test)
-        # TODO: Opcion de salida de CSV y modelos, para evitar perder el tiempo de computo
+        self.df_final_test = self.operaciones(df_test)
+
+        # Opcion de salida de CSV y modelos, para evitar perder el tiempo de computo
+        self.df_final.to_csv('00-df_final.csv')
+        self.df_final_test.to_csv('01-df_final_test.csv')
+
+    def getDataframes(self):
+        return self.df_final , self.df_final_test
 
     def operaciones(self, df):
         print("Comenzando operaciones")
@@ -98,17 +105,17 @@ class Inicializacion():
         return pd.concat([df, df1])
 
     def predict_nulls(self, df):
-        print('Entrenando garages')
+        print("\t\t Predict nulls")
         df = self.fill_xgboost(df, 'garages')
-        print('Entrenando habitaciones')
-        df = self.fill_xgboost(df, 'habitaciones')
-        print('Entrenando baños')
         df = self.fill_xgboost(df, 'banos')
-        print('Entrenando antiguedad.')
+        df = self.fill_xgboost(df, 'habitaciones')
         df = self.fill_xgboost(df, 'antiguedad', True)
+        print(df.shape)
+        print(df.info())
         return df
 
     def fill_xgboost(self, df, feature, continua=False):
+        print("\t\t\t fill with xgboost. Feature: ", {feature})
         # TODO: Format para encoding
         # Columnas relevantes
         cols = ['antiguedad', 'habitaciones',
@@ -167,7 +174,7 @@ class Inicializacion():
             'colsample_bytree': [0.8],
             'max_depth': [4],
             'n_estimators': [50],
-            'learning_rate': [0.001,0.01,0.03]}
+            'learning_rate': [0.001, 0.01, 0.03]}
         if continua:
             xgb = XGBRegressor()
             scoring = 'neg_mean_squared_error'
@@ -188,20 +195,19 @@ class Inicializacion():
         # Here we go
         start_time = self.timer(None)  # timing starts from this point for "start_time" variable
         random_search.fit(df_train_x, df_train_y)
-        df_test_x[feature+'_xgb'] = random_search.predict(df_test_x)
+        df_test_x[feature + '_xgb'] = random_search.predict(df_test_x)
 
         # df = df con modelo aplicado.
-        df = pd.merge(df, df_test_x[feature+'_xgb'], how='left', left_index=True, right_index=True)
-        df[feature] = np.where((df[feature].isnull() == True), df[feature+'_xgb'], df[feature])
-        df.drop(columns=[feature+'_xgb'],inplace=True)
+        df = pd.merge(df, df_test_x[feature + '_xgb'], how='left', left_index=True, right_index=True)
+        df[feature] = np.where((df[feature].isnull() == True), df[feature + '_xgb'], df[feature])
+        df.drop(columns=[feature + '_xgb'], inplace=True)
         self.df_xgb = df
         self.timer(start_time)  # timing ends here for "start_time" variable
 
         # Resultados CV
         results = random_search.cv_results_
         results = pd.DataFrame(results)
-        results.to_csv('cv_results_'+feature+'.csv')
-
+        results.to_csv('models/01-cv_results_' + feature + '.csv')
 
         # Dictionary of best parameters
         best_pars = random_search.best_params_
@@ -214,7 +220,7 @@ class Inicializacion():
         # Best XGB model that was found based on the metric score you specify
         best_model = random_search.best_estimator_
         # Save model
-        pickle.dump(random_search.best_estimator_, open("xgb_" + feature + ".pickle", "wb"))
+        pickle.dump(random_search.best_estimator_, open("models\\00-nulls-xgb_" + feature + ".pickle", "wb"))
 
         return df
 
@@ -269,9 +275,6 @@ class Inicializacion():
             ax.text(x, y, s=str(x) + '%', color='black', fontweight='bold', va='center')
 
         plt.show()
-
-    
-
 
 
 if __name__ == '__main__':
