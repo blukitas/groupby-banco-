@@ -164,7 +164,7 @@ class Inicializacion():
         df_test_x = df_test.dropna(subset=cols_subset)
 
         df_test_x = df_test_x.loc[:, cols_subset]
-        df_test = pd.merge(df_test_x, df_test_y, how='inner', left_index=True, right_index=True)
+        df_test = pd.merge(df_test_x, df_test_y.to_frame(), how='inner', left_index=True, right_index=True)
         df_test_x = df_test_x.loc[:, cols_subset]
 
         # Modelo - XGBoost
