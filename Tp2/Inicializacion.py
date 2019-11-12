@@ -46,6 +46,7 @@ class Inicializacion():
         df = self.predict_nulls(df)
         # Drop nan que quedaron pos limpieza y tratamientos
         df = df.dropna()
+        df = self.recast(df)
         return df
 
     def casteos(self, df):
@@ -111,42 +112,21 @@ class Inicializacion():
     def predict_nulls(self, df):
         print("\t\t Predict nulls")
         df = self.fill_xgboost(df, 'garages')
+        self.mostrar_nulls(df,'garages',save=True)
         df = self.fill_xgboost(df, 'banos')
+        self.mostrar_nulls(df,'banos',save=True)
         df = self.fill_xgboost(df, 'habitaciones')
-        df = self.fill_xgboost(df, 'antiguedad', True)
+        self.mostrar_nulls(df,'habitaciones',save=True)
+        df = self.fill_xgboost(df, 'antiguedad', save=True)
+        self.mostrar_nulls(df,'antiguedad',save=True)
         return df
 
     def fill_xgboost(self, df, feature, continua=False):
         print("\t\t\t fill with xgboost. Feature: ", {feature})
         # TODO: Format columnas según encoding usado
         # Columnas relevantes
-        cols = ['antiguedad', 'habitaciones',
-                'tipodepropiedad_0bc',
-                'tipodepropiedad_1bc',
-                'tipodepropiedad_2bc',
-                'tipodepropiedad_3bc',
-                'tipodepropiedad_4bc',
-                'tipodepropiedad_5bc',
-                'ciudad_0bc',
-                'ciudad_1bc',
-                'ciudad_2bc',
-                'ciudad_3bc',
-                'ciudad_4bc',
-                'ciudad_5bc',
-                'ciudad_6bc',
-                'ciudad_7bc',
-                'ciudad_8bc',
-                'ciudad_9bc',
-                'ciudad_10bc',
-                'provincia_0bc',
-                'provincia_1bc',
-                'provincia_2bc',
-                'provincia_3bc',
-                'provincia_4bc',
-                'provincia_5bc',
-                'banos', 'metroscubiertos', 'metrostotales',
-                'gimnasio', 'garages', 'usosmultiples', 'piscina', 'escuelascercanas',
-                'centroscomercialescercanos']
+        cols = [x for x in df.columns if x!= 'precio']
+        
         # Sin fecha y sin precio
         # Usamos todas la que queremos predecir
         cols_subset = [x for x in cols if x != feature]
@@ -176,7 +156,7 @@ class Inicializacion():
             'colsample_bytree': [0.8],
             'max_depth': [4],
             'n_estimators': [50],
-            'learning_rate': [0.001, 0.01, 0.03]}
+            'learning_rate': [0.01]}
         if continua:
             xgb = XGBRegressor()
             scoring = 'neg_mean_squared_error'
@@ -290,7 +270,19 @@ class Inicializacion():
         else:
             pass
 
-        plt.show()
+
+
+    def recast(self,df):
+        columns = []
+        for x in df.columns:
+            columns.append(x)
+        columns.remove('precio')
+        for x in range(len(columns)):
+            dtype = df[columns[x]].dtype.type
+            if dtype == np.int64 or dtype == np.float64 :
+                df = df.astype({columns[x]:np.int16})
+        return df
+
 
 
 if __name__ == '__main__':
