@@ -77,7 +77,7 @@ class Inicializacion():
     def drop_cols(self, df):
         print("\t\t Drop cols")
         # Latitud y Longitud son importantes pero la cantidad de nulls es muy grande
-        return df.drop(columns=['lat', 'lng', 'titulo', 'descripcion', 'id', 'idzona', 'direccion'])  # , inplace=True)
+        return df.drop(columns=['lat', 'lng', 'titulo', 'descripcion', 'idzona', 'direccion'])  # , inplace=True)
 
     def drop_nan(self, df):
         print("\t\t Drop nan")
@@ -117,7 +117,7 @@ class Inicializacion():
         self.mostrar_nulls(df,'banos',save=True)
         df = self.fill_xgboost(df, 'habitaciones')
         self.mostrar_nulls(df,'habitaciones',save=True)
-        df = self.fill_xgboost(df, 'antiguedad', save=True)
+        df = self.fill_xgboost(df, 'antiguedad',continua=True)
         self.mostrar_nulls(df,'antiguedad',save=True)
         return df
 
@@ -126,13 +126,13 @@ class Inicializacion():
         # TODO: Format columnas según encoding usado
         # Columnas relevantes
         cols = [x for x in df.columns if x!= 'precio']
-        
+
         # Sin fecha y sin precio
         # Usamos todas la que queremos predecir
         cols_subset = [x for x in cols if x != feature]
 
         df_train = df.dropna()
-        # df_train
+        df_train.drop(columns=['id'])
         df_test = df.loc[df[feature].isnull() == True]
         df_test = (df_test.dropna(subset=cols_subset))
 
@@ -187,6 +187,15 @@ class Inicializacion():
         self.df_xgb = df
         self.timer(start_time)  # timing ends here for "start_time" variable
 
+        # Creamos la carpeta si no existe
+
+        script_dir = os.path.dirname(__file__)
+        models_dir = os.path.join(script_dir, 'models/')
+        file_name = feature
+
+        if not os.path.isdir(models_dir):
+            os.makedirs(models_dir)
+
         # Resultados CV
         results = random_search.cv_results_
         results = pd.DataFrame(results)
@@ -203,7 +212,7 @@ class Inicializacion():
         # Best XGB model that was found based on the metric score you specify
         best_model = random_search.best_estimator_
         # Save model
-        pickle.dump(random_search.best_estimator_, open("models\\00-nulls-xgb_" + feature + ".pickle", "wb"))
+        pickle.dump(random_search.best_estimator_, open("models/00-nulls-xgb_" + feature + ".pickle", "wb"))
 
         return df
 
@@ -276,7 +285,10 @@ class Inicializacion():
         columns = []
         for x in df.columns:
             columns.append(x)
-        columns.remove('precio')
+        try:
+            columns.remove('precio')
+        except:
+            pass
         for x in range(len(columns)):
             dtype = df[columns[x]].dtype.type
             if dtype == np.int64 or dtype == np.float64 :
