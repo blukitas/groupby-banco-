@@ -37,7 +37,8 @@ class Prediction:
             pickle.dump(self.gscv, f)
 
     def submit(self):
-        answer = pd.DataFrame(list(zip(self.test_df.index, predicted)), columns =['id', 'predicted'])
+        self.test_ids = pd.read_csv('data/test.csv')['id']
+        answer = pd.DataFrame(list(zip(self.test_ids, self.predicted)), columns =['id', 'predicted'])
         answer.to_csv('{}.csv'.format(self.prefix), sep=',', index=False, header=False)
 
 
