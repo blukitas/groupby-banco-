@@ -15,19 +15,42 @@ from datetime import datetime
 import pickle
 import os
 
+
 class Inicializacion():
     # Encoder = 0 #Binario
     # Encoder = 1 #One Hot Encoding
-    def __init__(self, encoder=0):
-        self.encoder = encoder
-        # TODO: Modo verboso para informe, generando png de los gráfico de nulls, o bien escribiendo y poniendolo en
-        #       la pantalla
-        # TODO: Params como diccionario de parametros
+    paramsGenerales = {
+        'verbose': True,  # mostrar imagenes post transformacion
+        'guardarImagenes': False,  # Guarda imagenes post transformacion
+        'encoder': 0,  # Encoder. 0 Binario, 1 One hot encoding
+        'usarModelo': False,  # Si esta el modelo de pickle lo usa
+        'esTest': False,  # Si es test no droppeamos nans
+        # Para xgboost
+        'min_child_weight': [5],
+        'gamma': [0.5],
+        'subsample': [0.8],
+        'colsample_bytree': [0.8],
+        'max_depth': [4],
+        'n_estimators': [50],
+        'learning_rate': [0.01],
+        'scoring_regressor': 'neg_mean_squared_error',
+        'scoring_cat': 'accuracy',
+        'folds': 2,
+        'param_comb': 1,
+    }
+
+    def __init__(self, params=[]):
+        if params != []:
+            self.paramsGenerales = params
+
         print("Inicializando dataframes")
         df = pd.read_csv('data/train.csv')
         df_test = pd.read_csv('data/test.csv')
 
         self.df_final = self.operaciones(df)
+
+        self.paramsGenerales['usarModelo'] = True
+        self.paramsGenerales['esTest'] = True
         self.df_final_test = self.operaciones(df_test)
 
         # Opcion de salida de CSV y modelos, para evitar perder el tiempo de computo
@@ -45,7 +68,9 @@ class Inicializacion():
         df = self.features_engineering(df)
         df = self.predict_nulls(df)
         # Drop nan que quedaron pos limpieza y tratamientos
-        df = df.dropna()
+        if not self.paramsGenerales['esTest']:
+            print("\t drop nan")
+            df = df.dropna()
         df = self.recast(df)
         return df
 
@@ -112,107 +137,122 @@ class Inicializacion():
     def predict_nulls(self, df):
         print("\t\t Predict nulls")
         df = self.fill_xgboost(df, 'garages')
-        self.mostrar_nulls(df,'garages',save=True)
+        if self.paramsGenerales['verbose']:
+            self.mostrar_nulls(df, 'garages')
         df = self.fill_xgboost(df, 'banos')
-        self.mostrar_nulls(df,'banos',save=True)
+        if self.paramsGenerales['verbose']:
+            self.mostrar_nulls(df, 'banos')
         df = self.fill_xgboost(df, 'habitaciones')
-        self.mostrar_nulls(df,'habitaciones',save=True)
-        df = self.fill_xgboost(df, 'antiguedad',continua=True)
-        self.mostrar_nulls(df,'antiguedad',save=True)
+        if self.paramsGenerales['verbose']:
+            self.mostrar_nulls(df, 'habitaciones')
+        df = self.fill_xgboost(df, 'antiguedad', continua=True)
+        if self.paramsGenerales['verbose']:
+            self.mostrar_nulls(df, 'antiguedad')
         return df
 
     def fill_xgboost(self, df, feature, continua=False):
         print("\t\t\t fill with xgboost. Feature: ", {feature})
-        # TODO: Format columnas según encoding usado
-        # Columnas relevantes
-        cols = [x for x in df.columns if x!= 'precio']
+        # Columnas relevantes (Sin precio)
+        cols = [x for x in df.columns if x != 'precio']
 
-        # Sin fecha y sin precio
-        # Usamos todas la que queremos predecir
+        # Todas - la que queremos predecir
         cols_subset = [x for x in cols if x != feature]
 
-        df_train = df.dropna()
-        df_train.drop(columns=['id'])
-        df_test = df.loc[df[feature].isnull() == True]
-        df_test = (df_test.dropna(subset=cols_subset))
-
-        # Separamos los datos.
-        df_train_x = df_train.loc[:, cols_subset]
-        df_train_y = df_train[feature]
-        df_test_y = df_test[feature]
-
-        df_test_x = df_test.dropna(subset=cols_subset)
-
-        df_test_x = df_test_x.loc[:, cols_subset]
-        df_test = pd.merge(df_test_x, df_test_y.to_frame(), how='inner', left_index=True, right_index=True)
-        df_test_x = df_test_x.loc[:, cols_subset]
-
-        # Modelo - XGBoost
-        # Los parametros son fruta, estan puestos solo para hacer pruebas.
-        params = {
-            'min_child_weight': [5],
-            'gamma': [0.5],
-            'subsample': [0.8],
-            'colsample_bytree': [0.8],
-            'max_depth': [4],
-            'n_estimators': [50],
-            'learning_rate': [0.01]}
-        if continua:
-            xgb = XGBRegressor()
-            scoring = 'neg_mean_squared_error'
-        else:
-            xgb = XGBClassifier()
-            scoring = 'accuracy'
-
-        # TODO: Folds y param_comb como parametros.
-        # TODO: Parametro que levante el último modelo generado y use eso?
-        folds = 2
-        param_comb = 1
-
-        skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=1001)
-
-        random_search = RandomizedSearchCV(xgb, param_distributions=params, n_iter=param_comb, scoring=scoring,
-                                           n_jobs=-1,
-                                           cv=skf.split(df_train_x, df_train_y), random_state=1001)
-
-        # Here we go
+        # Empezamos a contar el tiempo
         start_time = self.timer(None)  # timing starts from this point for "start_time" variable
-        random_search.fit(df_train_x, df_train_y)
-        df_test_x[feature + '_xgb'] = random_search.predict(df_test_x)
+
+        if self.paramsGenerales['usarModelo']:
+            df_test_x = df.loc[:, cols_subset]
+
+            random_search = pickle.load(open("models/00-nulls-xgb_" + feature + ".pickle", 'rb'))
+            #result = loaded_model.score(X_test, Y_test)
+            df_test_x[feature + '_xgb'] = random_search.predict(df_test_x)
+            #print(result)
+        else:
+
+            df_train = df.dropna()
+            df_train.drop(columns=['id'])
+            df_test = df.loc[df[feature].isnull() == True]
+            df_test = (df_test.dropna(subset=cols_subset))
+
+            # Separamos los datos.
+            df_train_x = df_train.loc[:, cols_subset]
+            df_train_y = df_train[feature]
+            df_test_y = df_test[feature]
+
+            df_test_x = df_test.dropna(subset=cols_subset)
+
+            df_test_x = df_test_x.loc[:, cols_subset]
+            df_test = pd.merge(df_test_x, df_test_y.to_frame(), how='inner', left_index=True, right_index=True)
+            df_test_x = df_test_x.loc[:, cols_subset]
+
+            # Modelo - XGBoost
+            # Los parametros son fruta, estan puestos solo para hacer pruebas.
+            params = {
+                'min_child_weight': self.paramsGenerales['min_child_weight'],
+                'gamma': self.paramsGenerales['gamma'],
+                'subsample': self.paramsGenerales['subsample'],
+                'colsample_bytree': self.paramsGenerales['colsample_bytree'],
+                'max_depth': self.paramsGenerales['max_depth'],
+                'n_estimators': self.paramsGenerales['n_estimators'],
+                'learning_rate': self.paramsGenerales['learning_rate']
+            }
+            if continua:
+                xgb = XGBRegressor()
+                scoring = self.paramsGenerales['scoring_regressor']
+            else:
+                xgb = XGBClassifier()
+                scoring = self.paramsGenerales['scoring_cat']  # 'accuracy'  #
+
+            folds = self.paramsGenerales['folds']
+            param_comb = self.paramsGenerales['param_comb']
+
+            skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=1001)
+
+            random_search = RandomizedSearchCV(xgb, param_distributions=params, n_iter=param_comb, scoring=scoring,
+                                               n_jobs=-1,
+                                               cv=skf.split(df_train_x, df_train_y), random_state=1001)
+
+            # Here we go
+            random_search.fit(df_train_x, df_train_y)
+
+            df_test_x[feature + '_xgb'] = random_search.predict(df_test_x)
 
         # df = df con modelo aplicado.
         df = pd.merge(df, df_test_x[feature + '_xgb'].to_frame(), how='left', left_index=True, right_index=True)
-        df[feature] = np.where((df[feature].isnull() == True), df[feature + '_xgb'], df[feature])
+        df[feature] = np.where((df[feature].isnull()), df[feature + '_xgb'], df[feature])
         df.drop(columns=[feature + '_xgb'], inplace=True)
-        self.df_xgb = df
+        #self.df_xgb = df
         self.timer(start_time)  # timing ends here for "start_time" variable
 
-        # Creamos la carpeta si no existe
+        if not self.paramsGenerales['usarModelo']:
+            # Creamos la carpeta si no existe
 
-        script_dir = os.path.dirname(__file__)
-        models_dir = os.path.join(script_dir, 'models/')
-        file_name = feature
+            script_dir = os.path.dirname(__file__)
+            models_dir = os.path.join(script_dir, 'models/')
+            file_name = feature
 
-        if not os.path.isdir(models_dir):
-            os.makedirs(models_dir)
+            if not os.path.isdir(models_dir):
+                os.makedirs(models_dir)
 
-        # Resultados CV
-        results = random_search.cv_results_
-        results = pd.DataFrame(results)
-        results.to_csv('models/01-cv_results_' + feature + '.csv')
+            # Resultados CV
+            results = random_search.cv_results_
+            results = pd.DataFrame(results)
+            results.to_csv('models/01-cv_results_' + feature + '.csv')
 
-        # Dictionary of best parameters
-        best_pars = random_search.best_params_
-        print(' Los mejores parametros son: ')
-        print(best_pars)
-        print('------------------------')
-        print('Best score: ')
-        print(random_search.best_score_)
+            # Dictionary of best parameters
+            best_pars = random_search.best_params_
+            print('\t\t\t\t Los mejores parametros son: ')
+            print('\t\t\t\t', best_pars)
+            print('\t\t\t\t ------------------------')
+            print('\t\t\t\t Best score: ')
+            print('\t\t\t\t', random_search.best_score_)
+            print('\t\t\t\t ------------------------')
 
-        # Best XGB model that was found based on the metric score you specify
-        best_model = random_search.best_estimator_
-        # Save model
-        pickle.dump(random_search.best_estimator_, open("models/00-nulls-xgb_" + feature + ".pickle", "wb"))
+            # Best XGB model that was found based on the metric score you specify
+            best_model = random_search.best_estimator_
+            # Save model
+            pickle.dump(random_search.best_estimator_, open("models/00-nulls-xgb_" + feature + ".pickle", "wb"))
 
         return df
 
@@ -221,19 +261,19 @@ class Inicializacion():
         catlist = ['tipodepropiedad', 'ciudad', 'provincia']
         # 0 - Binario
         # 1 - One hot Encoding
-        if self.encoder == 0:
+        if self.paramsGenerales['encoder'] == 0:
             # Binary Encoding
             binary_enc = ce.BinaryEncoder()
             binary_encoded = binary_enc.fit_transform(df[catlist])
             df = df.join(binary_encoded.add_suffix('bc'))
-        elif self.encoder == 1:
+        elif self.paramsGenerales['encoder'] == 1:
             # One hot Encoding
             one_hot_enc = ce.OneHotEncoder()
             one_hot_encoded = one_hot_enc.fit_transform(df[catlist])
             df = df.join(one_hot_encoded.add_suffix('oh'))
         # TODO: Otros encodings?
 
-        return df.drop(columns=catlist)  # , inplace=True)
+        return df.drop(columns=catlist)
 
     def features_engineering(self, df):
         print("\t Features engineering")
@@ -252,49 +292,50 @@ class Inicializacion():
         elif start_time:
             thour, temp_sec = divmod((datetime.now() - start_time).total_seconds(), 3600)
             tmin, tsec = divmod(temp_sec, 60)
-            print('\n Time taken: %i hours %i minutes and %s seconds.' % (thour, tmin, round(tsec, 2)))
+            print('\t\t\t Time taken: %i hours %i minutes and %s seconds.' % (thour, tmin, round(tsec, 2)))
 
-    def mostrar_nulls(self, df,feature,save=False):
+    def mostrar_nulls(self, df, feature):
         nulls = pd.DataFrame((df.isnull().sum().sort_values() / len(df) * 100).round(2), columns=['porcentaje de NaN'])
-        nulls.drop(nulls.loc[nulls.loc[:, 'porcentaje de NaN'] <= 0].index, inplace=True)
-        plt.figure(figsize=(12, 8))
-        ax = nulls['porcentaje de NaN'].plot.barh()
-        ax.set_title('Porcentaje de valores nulos en cada columna', fontsize=20, y=1.02)
-        ax.set_xlabel('Porcentaje del total %', fontsize=16)
-        ax.set_ylabel('columnas', fontsize=16)
-        ax.grid(axis='x')
-
-        for y, x in enumerate(nulls['porcentaje de NaN']):
-            ax.text(x, y, s=str(x) + '%', color='black', fontweight='bold', va='center')
-
-        script_dir = os.path.dirname(__file__)
-        plots_dir = os.path.join(script_dir, 'plots/')
-        file_name = feature
-
-        if not os.path.isdir(plots_dir):
-            os.makedirs(plots_dir)
-
-        if save == True:
-            plt.savefig(plots_dir+file_name+'.png')
+        if (nulls.sum() == 0).bool():
+            print("No hay nulls")
         else:
-            pass
+            nulls.drop(nulls.loc[nulls.loc[:, 'porcentaje de NaN'] <= 0].index, inplace=True)
+            plt.figure(figsize=(12, 8))
+            ax = nulls['porcentaje de NaN'].plot.barh()
+            ax.set_title('Porcentaje de valores nulos en cada columna', fontsize=20, y=1.02)
+            ax.set_xlabel('Porcentaje del total %', fontsize=16)
+            ax.set_ylabel('columnas', fontsize=16)
+            ax.grid(axis='x')
 
+            for y, x in enumerate(nulls['porcentaje de NaN']):
+                ax.text(x, y, s=str(x) + '%', color='black', fontweight='bold', va='center')
 
+            script_dir = os.path.dirname(__file__)
+            plots_dir = os.path.join(script_dir, 'plots/')
+            file_name = feature
 
-    def recast(self,df):
+            if not os.path.isdir(plots_dir):
+                os.makedirs(plots_dir)
+
+            if self.paramsGenerales['guardarImagenes']:
+                plt.savefig(plots_dir + file_name + '.png')
+
+    def recast(self, df):
+        print("\t Recast final")
         columns = []
         for x in df.columns:
             columns.append(x)
+
         try:
             columns.remove('precio')
         except:
             pass
+
         for x in range(len(columns)):
             dtype = df[columns[x]].dtype.type
-            if dtype == np.int64 or dtype == np.float64 :
-                df = df.astype({columns[x]:np.int16})
+            if dtype == np.int64 or dtype == np.float64:
+                df = df.astype({columns[x]: np.int16})
         return df
-
 
 
 if __name__ == '__main__':
