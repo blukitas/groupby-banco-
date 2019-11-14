@@ -39,7 +39,7 @@ class Prediction:
     def submit(self):
         self.test_ids = pd.read_csv('data/test.csv')['id']
         answer = pd.DataFrame(list(zip(self.test_ids, self.predicted)), columns =['id', 'predicted'])
-        answer.to_csv('{}.csv'.format(self.prefix), sep=',', index=False, header=False)
+        answer.to_csv('{}.csv'.format(self.prefix), sep=',', index=False)
 
 
 if __name__ == '__main__':
