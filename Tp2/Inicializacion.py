@@ -50,8 +50,7 @@ class Inicializacion():
         self.df_final = self.operaciones(df)
 
         self.paramsGenerales['usarModelo'] = True
-        self.paramsGenerales['esTest'] = True
-        self.df_final_test = self.operaciones(df_test)
+        self.df_final_test = self.operaciones(df_test, dropNans=False)
 
         # Opcion de salida de CSV y modelos, para evitar perder el tiempo de computo
         self.df_final.to_csv('00-df_final.csv')
@@ -60,18 +59,30 @@ class Inicializacion():
     def getDataframes(self):
         return self.df_final, self.df_final_test
 
-    def operaciones(self, df):
+    def operaciones(self, df, dropNans=True):
         print("Comenzando operaciones")
-        df = self.tratamiento_nulls(df)
+        print(len(df))
+        df = self.tratamiento_nulls(df, dropNans=dropNans)
+        print(len(df))
         df = self.encoding(df)
+        print(len(df))
+        if dropNans:
+            print("\t drop nans in selected columns")
+            df = self.drop_nan(df)
+        # Descartamos las columnas que fueron encodeadas
+        df = df.drop(columns=['tipodepropiedad', 'provincia', 'ciudad'])
         df = self.casteos(df)
+        print(len(df))
         df = self.features_engineering(df)
+        print(len(df))
         df = self.predict_nulls(df)
+        print(len(df))
         # Drop nan que quedaron pos limpieza y tratamientos
-        if not self.paramsGenerales['esTest']:
-            print("\t drop nan")
+        if dropNans:
+            print("\t drop other nans")
             df = df.dropna()
         df = self.recast(df)
+        print(len(df))
         return df
 
     def casteos(self, df):
@@ -92,16 +103,14 @@ class Inicializacion():
             "fecha": np.datetime64
         })
 
-    def tratamiento_nulls(self, df):
+    def tratamiento_nulls(self, df, dropNans=True):
         print("\t Nulls")
         df = self.drop_cols(df)
-        df = self.drop_nan(df)
         df = self.fill_metros(df)
         return df
 
     def drop_cols(self, df):
         print("\t\t Drop cols")
-        # Latitud y Longitud son importantes pero la cantidad de nulls es muy grande
         return df.drop(columns=['lat', 'lng', 'titulo', 'descripcion', 'idzona', 'direccion'])  # , inplace=True)
 
     def drop_nan(self, df):
@@ -273,7 +282,7 @@ class Inicializacion():
             df = df.join(one_hot_encoded.add_suffix('oh'))
         # TODO: Otros encodings?
 
-        return df.drop(columns=catlist)
+        return df
 
     def features_engineering(self, df):
         print("\t Features engineering")
