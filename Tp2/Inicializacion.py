@@ -1,30 +1,29 @@
 # %matplotlib inline
+import os
+import pickle
+from datetime import datetime
+
+import category_encoders as ce
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-from numpy.ma.bench import timer
-from scipy.sparse.linalg import svds
-import category_encoders as ce
-from xgboost import XGBClassifier, XGBRegressor
-from sklearn import metrics
-from sklearn.model_selection import RandomizedSearchCV, GridSearchCV
-from sklearn.metrics import roc_auc_score
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import SelectKBest, f_classif, mutual_info_classif, chi2
+from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import RandomizedSearchCV
 from sklearn.model_selection import StratifiedKFold
-from datetime import datetime
-import pickle
-import os
+from xgboost import XGBClassifier, XGBRegressor
 
 
 class Inicializacion():
     # Encoder = 0 #Binario
     # Encoder = 1 #One Hot Encoding
     paramsGenerales = {
-        'verbose': True,  # mostrar imagenes post transformacion
+        'verbose': False,  # mostrar imagenes post transformacion
         'guardarImagenes': False,  # Guarda imagenes post transformacion
         'encoder': 0,  # Encoder. 0 Binario, 1 One hot encoding
         'usarModelo': False,  # Si esta el modelo de pickle lo usa
-        'esTest': False,  # Si es test no droppeamos nans
+        'dropNan': True,  # Si es test no droppeamos nans
         # Para xgboost
         'min_child_weight': [5],
         'gamma': [0.5],
@@ -50,7 +49,8 @@ class Inicializacion():
         self.df_final = self.operaciones(df)
 
         self.paramsGenerales['usarModelo'] = True
-        self.df_final_test = self.operaciones(df_test, dropNans=False)
+        self.paramsGenerales['dropNan'] = False
+        self.df_final_test = self.operaciones(df_test)
 
         # Opcion de salida de CSV y modelos, para evitar perder el tiempo de computo
         self.df_final.to_csv('00-df_final.csv')
@@ -59,30 +59,40 @@ class Inicializacion():
     def getDataframes(self):
         return self.df_final, self.df_final_test
 
-    def operaciones(self, df, dropNans=True):
+    def operaciones(self, df):
         print("Comenzando operaciones")
-        print(len(df))
-        df = self.tratamiento_nulls(df, dropNans=dropNans)
-        print(len(df))
+        if self.paramsGenerales['verbose']:
+            print("Cantidad de registros: ", len(df))
+        df = self.tratamiento_nulls(df)
+        if self.paramsGenerales['verbose']:
+            print("Cantidad de registros: ", len(df))
         df = self.encoding(df)
-        print(len(df))
-        if dropNans:
+        if self.paramsGenerales['verbose']:
+            print("Cantidad de registros: ", len(df))
+        if self.paramsGenerales['dropNan']:
             print("\t drop nans in selected columns")
             df = self.drop_nan(df)
+
         # Descartamos las columnas que fueron encodeadas
         df = df.drop(columns=['tipodepropiedad', 'provincia', 'ciudad'])
         df = self.casteos(df)
-        print(len(df))
+        if self.paramsGenerales['verbose']:
+            print("Cantidad de registros: ", len(df))
         df = self.features_engineering(df)
-        print(len(df))
+        if self.paramsGenerales['verbose']:
+            print("Cantidad de registros: ", len(df))
         df = self.predict_nulls(df)
-        print(len(df))
+        if self.paramsGenerales['verbose']:
+            print("Cantidad de registros: ", len(df))
+
         # Drop nan que quedaron pos limpieza y tratamientos
-        if dropNans:
+        if self.paramsGenerales['dropNan']:
             print("\t drop other nans")
             df = df.dropna()
-        df = self.recast(df)
-        print(len(df))
+            df = self.recast(df)
+            # self.metric_selection(df)
+            if self.paramsGenerales['verbose']: #TODO: único verbose?
+                print("Cantidad de registros: ", len(df))
         return df
 
     def casteos(self, df):
@@ -103,7 +113,7 @@ class Inicializacion():
             "fecha": np.datetime64
         })
 
-    def tratamiento_nulls(self, df, dropNans=True):
+    def tratamiento_nulls(self, df):
         print("\t Nulls")
         df = self.drop_cols(df)
         df = self.fill_metros(df)
@@ -170,6 +180,7 @@ class Inicializacion():
         # Empezamos a contar el tiempo
         start_time = self.timer(None)  # timing starts from this point for "start_time" variable
 
+        # TODO: Validar, si no existe el modelo, aunque quisiera usarlo no puede. Corregir eso.
         if self.paramsGenerales['usarModelo']:
             df_test_x = df.loc[:, cols_subset]
 
@@ -281,6 +292,7 @@ class Inicializacion():
             one_hot_encoded = one_hot_enc.fit_transform(df[catlist])
             df = df.join(one_hot_encoded.add_suffix('oh'))
         # TODO: Otros encodings?
+        # TODO: AUC Scoring?
 
         return df
 
@@ -292,7 +304,99 @@ class Inicializacion():
             day=df.fecha.dt.day,
             month=df.fecha.dt.month,
             year=df.fecha.dt.year)
-        return df.drop(columns='fecha')  # , inplace=True)
+        df = df.drop(columns='fecha')
+        return df
+
+    def metric_selection(self, df):
+        print("\t Metric selection")
+        feature_cols = df.columns.drop('precio') # TODO: Q es nuestro outcome? Precio?
+        train, valid, _ = self.get_data_splits(df)
+
+
+        print('\t\t f_classif')
+        # Empezamos a contar el tiempo
+        start_time = self.timer(None)  # timing starts from this point for "start_time" variable
+
+        selector = SelectKBest(f_classif, k=3)
+
+        X_new = selector.fit_transform(train[feature_cols], train['precio'])
+        plt.bar(feature_cols, selector.scores_)
+        plt.xlabel('Features')
+        plt.xticks(rotation=90)
+        plt.ylabel('Importancia')
+        plt.title('Importancia Features con Univariate (f_classif)')
+        plt.show()
+        self.timer(start_time)  # timing ends here for "start_time" variable
+
+        # print('\t\t chi2')
+        # # Empezamos a contar el tiempo
+        # start_time = self.timer(None)  # timing starts from this point for "start_time" variable
+
+        # selector_chi2 = SelectKBest(chi2, k=3)
+        # X_new = selector_chi2.fit_transform(train[feature_cols], train['precio'])
+        # plt.bar(feature_cols, selector_chi2.scores_)
+        # plt.xlabel('Features')
+        # plt.ylabel('Importancia')
+        # plt.title('Importancia Features con Univariate (chi2)')
+        # plt.show()
+        #
+        # # Sin la primera
+        # plt.bar(feature_cols[1:], selector_chi2.scores_[1:])
+        # plt.xlabel('Features')
+        # plt.xticks(rotation=90)
+        # plt.ylabel('Importancia')
+        # plt.title('Importancia Features con Univariate (chi2)')
+        # plt.show()
+        # self.timer(start_time)  # timing ends here for "start_time" variable
+
+        print('\t\t mutual_info_classif')
+        # Empezamos a contar el tiempo
+        start_time = self.timer(None)  # timing starts from this point for "start_time" variable
+        selector_mutual = SelectKBest(mutual_info_classif, k=3)
+
+        X_new = selector_mutual.fit_transform(train[feature_cols], train['precio'])
+        plt.bar(feature_cols, selector_mutual.scores_)
+        plt.xlabel('Features')
+        plt.xticks(rotation=90)
+        plt.ylabel('Importancia')
+        plt.title('Importancia Features con Univariate (mutual)')
+        plt.show()
+        self.timer(start_time)  # timing ends here for "start_time" variable
+
+        print('\t\t L1 regularization (Lasso Regression)')
+        # Empezamos a contar el tiempo
+        start_time = self.timer(None)  # timing starts from this point for "start_time" variable
+        train, valid, _ = self.get_data_splits(df)
+        X, y = train[train.columns.drop("precio")], train['precio']
+
+        # Set the regularization parameter C=1
+        logistic = LogisticRegression(C=1, penalty="l1", random_state=7).fit(X, y)
+        plt.bar(feature_cols, logistic.coef_[0])
+        plt.xlabel('Features')
+        plt.xticks(rotation=90)
+        plt.ylabel('Importancia')
+        plt.title('Importancia Features con Lasso')
+        plt.show()
+        self.timer(start_time)  # timing ends here for "start_time" variable
+
+        print('\t\t Random forest')
+        # Empezamos a contar el tiempo
+        start_time = self.timer(None)  # timing starts from this point for "start_time" variable
+        X, y = train[train.columns.drop("precio")], train['precio']
+        val_X, val_y = valid[valid.columns.drop("precio")], valid['precio']
+
+        forest_model = RandomForestClassifier(random_state=1)
+        forest_model.fit(X, y)
+        preds = forest_model.predict(val_X)
+
+        plt.bar(feature_cols, forest_model.feature_importances_)
+        plt.xlabel('Features')
+        plt.xticks(rotation=90)
+        plt.ylabel('Importancia')
+        plt.title('Importancia Features con RF')
+        plt.show()
+        self.timer(start_time)  # timing ends here for "start_time" variable
+
 
     def timer(self, start_time=None):
         if not start_time:
@@ -328,6 +432,21 @@ class Inicializacion():
 
             if self.paramsGenerales['guardarImagenes']:
                 plt.savefig(plots_dir + file_name + '.png')
+
+    def get_data_splits(self, df, valid_fraction=0.1):
+        # valid_fraction = 0.1
+        # print(type(df))
+        # print(df.shape())
+        # print(df.head(5))
+
+        valid_size = int(len(df) * valid_fraction)
+
+        train = df[:-valid_size * 2]
+        # valid size == test size, last two sections of the data
+        valid = df[-valid_size * 2:-valid_size]
+        test = df[-valid_size:]
+
+        return train, valid, test
 
     def recast(self, df):
         print("\t Recast final")
