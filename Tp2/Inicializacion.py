@@ -21,7 +21,7 @@ class Inicializacion():
     paramsGenerales = {
         'verbose': False,  # mostrar imagenes post transformacion
         'guardarImagenes': False,  # Guarda imagenes post transformacion
-        'encoder': 0,  # Encoder. 0 Binario, 1 One hot encoding
+        'encoder': 1,  # Encoder. 0 Binario, 1 One hot encoding
         'usarModelo': False,  # Si esta el modelo de pickle lo usa
         'dropNan': True,  # Si es test no droppeamos nans
         # Para xgboost
@@ -91,7 +91,7 @@ class Inicializacion():
             df = df.dropna()
             df = self.recast(df)
             # self.metric_selection(df)
-            if self.paramsGenerales['verbose']: #TODO: único verbose?
+            if self.paramsGenerales['verbose']:  # TODO: único verbose?
                 print("Cantidad de registros: ", len(df))
         return df
 
@@ -185,9 +185,9 @@ class Inicializacion():
             df_test_x = df.loc[:, cols_subset]
 
             random_search = pickle.load(open("models/00-nulls-xgb_" + feature + ".pickle", 'rb'))
-            #result = loaded_model.score(X_test, Y_test)
+            # result = loaded_model.score(X_test, Y_test)
             df_test_x[feature + '_xgb'] = random_search.predict(df_test_x)
-            #print(result)
+            # print(result)
         else:
 
             df_train = df.dropna()
@@ -242,7 +242,7 @@ class Inicializacion():
         df = pd.merge(df, df_test_x[feature + '_xgb'].to_frame(), how='left', left_index=True, right_index=True)
         df[feature] = np.where((df[feature].isnull()), df[feature + '_xgb'], df[feature])
         df.drop(columns=[feature + '_xgb'], inplace=True)
-        #self.df_xgb = df
+        # self.df_xgb = df
         self.timer(start_time)  # timing ends here for "start_time" variable
 
         if not self.paramsGenerales['usarModelo']:
@@ -300,7 +300,7 @@ class Inicializacion():
         print("\t Features engineering")
         # Partir fecha
         print("\t\t Separar fecha")
-        df.assign(
+        df = df.assign(
             day=df.fecha.dt.day,
             month=df.fecha.dt.month,
             year=df.fecha.dt.year)
@@ -309,9 +309,8 @@ class Inicializacion():
 
     def metric_selection(self, df):
         print("\t Metric selection")
-        feature_cols = df.columns.drop('precio') # TODO: Q es nuestro outcome? Precio?
+        feature_cols = df.columns.drop('precio')  # TODO: Q es nuestro outcome? Precio?
         train, valid, _ = self.get_data_splits(df)
-
 
         print('\t\t f_classif')
         # Empezamos a contar el tiempo
@@ -396,7 +395,6 @@ class Inicializacion():
         plt.title('Importancia Features con RF')
         plt.show()
         self.timer(start_time)  # timing ends here for "start_time" variable
-
 
     def timer(self, start_time=None):
         if not start_time:
