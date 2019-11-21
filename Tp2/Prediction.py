@@ -24,7 +24,7 @@ class Prediction:
 
     def train(self):
         print('Training...')
-        self.gscv = GridSearchCV(self.model, self.param_grid, scoring='neg_mean_absolute_error', cv=10)
+        self.gscv = GridSearchCV(self.model, self.param_grid, scoring='neg_mean_absolute_error', cv=10, verbose=10)
         self. gscv.fit(self.X, self.y)
         self.best_params = self.gscv.best_params_
         self.score = self.gscv.best_score_
