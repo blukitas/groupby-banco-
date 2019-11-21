@@ -481,4 +481,4 @@ class Inicializacion():
 
 
 if __name__ == '__main__':
-    Inicializacion.Inicilizacion(0)
+    Inicializacion.Inicializacion(0)
