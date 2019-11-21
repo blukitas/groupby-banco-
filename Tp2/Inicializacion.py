@@ -133,6 +133,7 @@ class Inicializacion():
         df1 = df[df.tipodepropiedad == 'Terreno'].fillna(0)
         df = df[df.tipodepropiedad != 'Terreno']
         df = pd.concat([df, df1])
+        df = df.sample(frac=1)
         # Terreno != null
         cond1 = (df.tipodepropiedad == 'Terreno') & (df.metroscubiertos != 0)
         df.metroscubiertos = np.where(cond1, 0, df.metroscubiertos)
@@ -151,7 +152,9 @@ class Inicializacion():
         print("\t\t\t Terreno comercial")
         df1 = df[df.tipodepropiedad == 'Terreno comercial'].fillna(0)
         df = df[df.tipodepropiedad != 'Terreno comercial']
-        return pd.concat([df, df1])
+        df = pd.concat([df, df1])
+        df = df.sample(frac=1)
+        return df
 
     def predict_nulls(self, df):
         print("\t\t Predict nulls")
