@@ -285,15 +285,25 @@ class Inicializacion():
         # 0 - Binario
         # 1 - One hot Encoding
         if self.paramsGenerales['encoder'] == 0:
-            # Binary Encoding
-            binary_enc = ce.BinaryEncoder()
-            binary_encoded = binary_enc.fit_transform(df[catlist])
-            df = df.join(binary_encoded.add_suffix('bc'))
+            if self.paramsGenerales['dropNan'] == 1:
+                # Binary Encoding
+                self.binary_enc = ce.BinaryEncoder()
+                binary_encoded = self.binary_enc.fit_transform(df[catlist])
+                df = df.join(binary_encoded.add_suffix('bc'))
+            else:
+                binary_encoded = self.binary_enc.transform(df[catlist])
+                df = df.join(binary_encoded.add_suffix('bc'))
+
         elif self.paramsGenerales['encoder'] == 1:
-            # One hot Encoding
-            one_hot_enc = ce.OneHotEncoder()
-            one_hot_encoded = one_hot_enc.fit_transform(df[catlist])
-            df = df.join(one_hot_encoded.add_suffix('oh'))
+            if self.paramsGenerales['dropNan'] == 1:
+                # One hot Encoding
+                self.one_hot_enc = ce.OneHotEncoder()
+                one_hot_encoded = self.one_hot_enc.fit_transform(df[catlist])
+                df = df.join(one_hot_encoded.add_suffix('oh'))
+            else:
+                one_hot_encoded = self.one_hot_enc.transform(df[catlist])
+                df = df.join(one_hot_encoded.add_suffix('oh'))
+
         # TODO: Otros encodings?
         # TODO: AUC Scoring?
 
