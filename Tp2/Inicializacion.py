@@ -21,7 +21,7 @@ class Inicializacion():
     paramsGenerales = {
         'verbose': False,  # mostrar imagenes post transformacion
         'guardarImagenes': False,  # Guarda imagenes post transformacion
-        'encoder': 1,  # Encoder. 0 Binario, 1 One hot encoding
+        'encoder': 0,  # Encoder. 0 Binario, 1 One hot encoding
         'usarModelo': False,  # Si esta el modelo de pickle lo usa
         'dropNan': True,  # Si es test no droppeamos nans
         # Para xgboost
@@ -481,4 +481,4 @@ class Inicializacion():
 
 
 if __name__ == '__main__':
-    Inicializacion.Inicializacion(0)
+    preprocesamiento = Inicializacion()
