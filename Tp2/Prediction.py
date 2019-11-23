@@ -24,7 +24,7 @@ class Prediction:
 
     def train(self):
         print('Training...')
-        self.gscv = GridSearchCV(self.model, self.param_grid, scoring='neg_mean_absolute_error', cv=10)
+        self.gscv = GridSearchCV(self.model, self.param_grid, scoring='neg_mean_absolute_error', cv=10, verbose=10)
         self. gscv.fit(self.X, self.y)
         self.best_params = self.gscv.best_params_
         self.score = self.gscv.best_score_
@@ -39,7 +39,7 @@ class Prediction:
     def submit(self):
         self.test_ids = pd.read_csv('data/test.csv')['id']
         answer = pd.DataFrame(list(zip(self.test_ids, self.predicted)), columns =['id', 'predicted'])
-        answer.to_csv('{}.csv'.format(self.prefix), sep=',', index=False)
+        answer.to_csv('{}-{}.csv'.format(self.prefix, int(round(self.score))), sep=',', index=False)
 
 
 if __name__ == '__main__':
