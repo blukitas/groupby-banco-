@@ -37,7 +37,7 @@ class Prediction:
         self.predicted = self.model.predict(self.test_df)
 
     def save(self):
-        if self.param_grid=[]:
+        if self.param_grid==[]:
             with open('{}.model'.format(self.prefix),'wb') as f:
                 pickle.dump(self.model, f)        
         else:       
