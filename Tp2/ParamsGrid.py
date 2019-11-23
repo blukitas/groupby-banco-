@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from xgboost import XGBClassifier
-
+from sklearn.ensemble import GradientBoostingRegressor
 
 class ParamsGrid:
     metodos = {
@@ -38,5 +38,19 @@ class ParamsGrid:
         'knn': (KNeighborsRegressor(), {
             'n_neighbors': np.arange(15, 34, 2),
             'metric': ['euclidean', 'manhattan', 'chebyshev', 'minkowski']
-        })
+        }),
+        'gbr': (GradientBoostingRegressor(), 
+            {'n_estimators':[250], 
+            'max_depth':[3],
+            'learning_rate':[.1, .01, .001],
+            'min_samples_leaf':[9],
+            'min_samples_split':[9]})
+    }
+
+class singleModels:
+    models = {
+        'gbr': GradientBoostingRegressor(loss='quantile', alpha=0.95,
+                                n_estimators=250, max_depth=3,
+                                learning_rate=.1, min_samples_leaf=9,
+                                min_samples_split=9)
     }
