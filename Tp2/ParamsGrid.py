@@ -27,13 +27,13 @@ class ParamsGrid:
             # 'warm_start': False
         }),
         'xgb': (XGBClassifier(), {
-            'min_child_weight': np.arange(5, 5),
-            'gamma': np.arange(1, 1),
-            'subsample': np.arange(0.8, 0.8),
-            'colsample_bytree': np.arange(0.8, 0.8),
+            'min_child_weight': [5],
+            'gamma': [5],
+            'subsample': [0.8],
+            'colsample_bytree': [0.8],
             'max_depth': np.arange(3, 20, 3),
             'n_estimators': np.arange(100, 2000, 100),
-            'learning_rate': np.arange(0.01, 0.01)
+            'learning_rate': [0.01]
         }),
         'knn': (KNeighborsRegressor(), {
             'n_neighbors': np.arange(15, 34, 2),
