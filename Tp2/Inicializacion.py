@@ -1,3 +1,4 @@
+﻿# -*- coding: utf-8 -*-
 # %matplotlib inline
 import os
 import pickle
@@ -15,15 +16,13 @@ from sklearn.model_selection import StratifiedKFold
 from xgboost import XGBClassifier, XGBRegressor
 
 
-class Inicializacion():
+class Inicializacion:
     # Encoder = 0 #Binario
     # Encoder = 1 #One Hot Encoding
     paramsGenerales = {
-        'verbose': False,  # mostrar imagenes post transformacion
-        'guardarImagenes': False,  # Guarda imagenes post transformacion
+        'verbose': False,  # Agregar mas informacion. Texto, imagenes, guardar.
         'encoder': 0,  # Encoder. 0 Binario, 1 One hot encoding
-        'usarModelo': False,  # Si esta el modelo de pickle lo usa
-        'dropNan': True,  # Si es test no droppeamos nans
+        'esTest': False,  # Si es test no droppeamos nans
         # Para xgboost
         'min_child_weight': [5],
         'gamma': [0.5],
@@ -42,17 +41,16 @@ class Inicializacion():
         if params != []:
             self.paramsGenerales = params
 
-        print("Inicializando dataframes")
+        print("Inicializando")
         df = pd.read_csv('data/train.csv')
         df_test = pd.read_csv('data/test.csv')
 
         self.df_final = self.operaciones(df)
 
-        self.paramsGenerales['usarModelo'] = True
-        self.paramsGenerales['dropNan'] = False
+        self.paramsGenerales['esTest'] = True
         self.df_final_test = self.operaciones(df_test)
 
-        # Opcion de salida de CSV y modelos, para evitar perder el tiempo de computo
+        # Salida en csv, para evitar recalculos
         self.df_final.to_csv('00-df_final.csv')
         self.df_final_test.to_csv('01-df_final_test.csv')
 
@@ -61,140 +59,144 @@ class Inicializacion():
 
     def operaciones(self, df):
         print("Comenzando operaciones")
-        if self.paramsGenerales['verbose']:
-            print("Cantidad de registros: ", len(df))
+        self.print_len(df)
+
         df = self.tratamiento_nulls(df)
-        if self.paramsGenerales['verbose']:
-            print("Cantidad de registros: ", len(df))
+        self.print_len(df)
+
         df = self.encoding(df)
-        if self.paramsGenerales['verbose']:
-            print("Cantidad de registros: ", len(df))
-        if self.paramsGenerales['dropNan']:
-            print("\t drop nans in selected columns")
+        self.print_len(df)
+
+        if not self.paramsGenerales['esTest']:
+            print("   drop nans in selected columns")
             df = self.drop_nan(df)
+            self.print_len(df)
 
         # Descartamos las columnas que fueron encodeadas
         df = df.drop(columns=['tipodepropiedad', 'provincia', 'ciudad'])
+
         df = self.casteos(df)
-        if self.paramsGenerales['verbose']:
-            print("Cantidad de registros: ", len(df))
+        self.print_len(df)
+
         df = self.features_engineering(df)
-        if self.paramsGenerales['verbose']:
-            print("Cantidad de registros: ", len(df))
+        self.print_len(df)
+
         df = self.predict_nulls(df)
-        if self.paramsGenerales['verbose']:
-            print("Cantidad de registros: ", len(df))
+        self.print_len(df)
 
         # Drop nan que quedaron pos limpieza y tratamientos
-        if self.paramsGenerales['dropNan']:
-            print("\t drop other nans")
+        if not self.paramsGenerales['esTest']:
+            print("   drop other nans")
             df = df.dropna()
+            self.print_len(df)
+
             df = self.recast(df)
+            self.print_len(df)
+
             # self.metric_selection(df)
-            if self.paramsGenerales['verbose']:  # TODO: único verbose?
-                print("Cantidad de registros: ", len(df))
+            # self.print_len(df)
         return df
 
+
+    def print_len(self, df):
+        if self.paramsGenerales['verbose']:
+            print("Cantidad de registros: ", len(df))
+
+
     def casteos(self, df):
-        print("\t Cast")
-        # Casteamos los dtypes a los correctos.
+        print("   Cast")
         return df.astype({
             "piscina": 'int16',
             "usosmultiples": 'int16',
             "escuelascercanas": 'int16',
             "centroscomercialescercanos": 'int16',
             "gimnasio": 'int16',
-            #    "antiguedad": 'int16',
-            #    "habitaciones": 'int16',
-            #    "banos": 'int16',
-            #    'garages': 'int16',
             "metroscubiertos": 'int16',
             "metrostotales": 'int16',
             "fecha": np.datetime64
         })
 
     def tratamiento_nulls(self, df):
-        print("\t Nulls")
+        print("   Nulls")
         df = self.drop_cols(df)
         df = self.fill_metros(df)
         return df
 
     def drop_cols(self, df):
-        print("\t\t Drop cols")
-        return df.drop(columns=['lat', 'lng', 'titulo', 'descripcion', 'idzona', 'direccion'])  # , inplace=True)
+        print("     Drop cols")
+        return df.drop(columns=['lat', 'lng', 'titulo', 'descripcion', 'idzona', 'direccion'])
+        # return df.drop(columns=['lat', 'lng', 'descripcion', 'idzona', 'direccion'])
 
     def drop_nan(self, df):
-        print("\t\t Drop nan")
-        return df.dropna(subset=['tipodepropiedad', 'provincia', 'ciudad'])  # , inplace=True)
+        print("     Drop nan")
+        return df.dropna(subset=['tipodepropiedad', 'provincia', 'ciudad'])
 
     def fill_metros(self, df):
-        print("\t\t Fill metros")
-        print("\t\t\t Terreno")
+        print("     Fill metros")
+
+        print("       Terreno")
         df1 = df[df.tipodepropiedad == 'Terreno'].fillna(0)
         df = df[df.tipodepropiedad != 'Terreno']
         df = pd.concat([df, df1])
-        df = df.sample(frac=1)
+
         # Terreno != null
         cond1 = (df.tipodepropiedad == 'Terreno') & (df.metroscubiertos != 0)
         df.metroscubiertos = np.where(cond1, 0, df.metroscubiertos)
 
-        print("\t\t\t Apartamento")
+        print("       Apartamento")
         cond = (df.tipodepropiedad == 'Apartamento') & (df.metrostotales.isnull())
         df.metrostotales = np.where(cond, df.metroscubiertos, df.metrostotales)
 
-        print("\t\t\t Metros cubiertos null")
+        print("       Metros cubiertos null")
         # Metros totales = metros cubiertos SI es null
         df.metrostotales = np.where(df.metrostotales.isnull(), df.metroscubiertos, df.metrostotales)
-        print("\t\t\t Metros totales null")
+        print("       Metros totales null")
         # Metros cubiertos = metros totales SI es null
         df.metroscubiertos = np.where(df.metroscubiertos.isnull(), df.metrostotales, df.metroscubiertos)
 
-        print("\t\t\t Terreno comercial")
+        print("       Terreno comercial")
         df1 = df[df.tipodepropiedad == 'Terreno comercial'].fillna(0)
         df = df[df.tipodepropiedad != 'Terreno comercial']
+
         df = pd.concat([df, df1])
-        df = df.sample(frac=1)
+        df = df.sample(frac=1)  # No entendí eso que tul
         return df
 
     def predict_nulls(self, df):
-        print("\t\t Predict nulls")
-        df = self.fill_xgboost(df, 'garages')
-        if self.paramsGenerales['verbose']:
-            self.mostrar_nulls(df, 'garages')
-        df = self.fill_xgboost(df, 'banos')
-        if self.paramsGenerales['verbose']:
-            self.mostrar_nulls(df, 'banos')
-        df = self.fill_xgboost(df, 'habitaciones')
-        if self.paramsGenerales['verbose']:
-            self.mostrar_nulls(df, 'habitaciones')
-        df = self.fill_xgboost(df, 'antiguedad', continua=True)
-        if self.paramsGenerales['verbose']:
-            self.mostrar_nulls(df, 'antiguedad')
+        print("     Predict nulls")
+
+        f = [('garages', False), ('banos', False), ('habitaciones', False), ('antiguedad', True)]
+        for feature, continua in f:
+            df = self.fill_xgboost(df, feature, continua)
+            if self.paramsGenerales['verbose']:
+                self.mostrar_nulls(df, feature)
         return df
 
     def fill_xgboost(self, df, feature, continua=False):
-        print("\t\t\t fill with xgboost. Feature: ", {feature})
+        print("       fill with xgboost. Feature: ", {feature})
+
         # Columnas relevantes (Sin precio)
         cols = [x for x in df.columns if x != 'precio']
+        # cols = [x for x in df.columns if x not in ['precio', 'titulo', 'tituloh']]
 
         # Todas - la que queremos predecir
         cols_subset = [x for x in cols if x != feature]
 
-        # Empezamos a contar el tiempo
-        start_time = self.timer(None)  # timing starts from this point for "start_time" variable
+
+        start_time = self.timer(None)
 
         # TODO: Validar, si no existe el modelo, aunque quisiera usarlo no puede. Corregir eso.
-        if self.paramsGenerales['usarModelo']:
+        if self.paramsGenerales['esTest']:
             df_test_x = df.loc[:, cols_subset]
 
             random_search = pickle.load(open("models/00-nulls-xgb_" + feature + ".pickle", 'rb'))
-            # result = loaded_model.score(X_test, Y_test)
             df_test_x[feature + '_xgb'] = random_search.predict(df_test_x)
-            # print(result)
+
         else:
 
             df_train = df.dropna()
             df_train.drop(columns=['id'])
+
             df_test = df.loc[df[feature].isnull() == True]
             df_test = (df_test.dropna(subset=cols_subset))
 
@@ -209,8 +211,7 @@ class Inicializacion():
             df_test = pd.merge(df_test_x, df_test_y.to_frame(), how='inner', left_index=True, right_index=True)
             df_test_x = df_test_x.loc[:, cols_subset]
 
-            # Modelo - XGBoost
-            # Los parametros son fruta, estan puestos solo para hacer pruebas.
+            # Hiperparametros - XGBoost
             params = {
                 'min_child_weight': self.paramsGenerales['min_child_weight'],
                 'gamma': self.paramsGenerales['gamma'],
@@ -224,7 +225,6 @@ class Inicializacion():
             param_comb = self.paramsGenerales['param_comb']
 
             skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=1001)
-
             if continua:
                 xgb = XGBRegressor()
                 scoring = self.paramsGenerales['scoring_regressor']
@@ -239,7 +239,6 @@ class Inicializacion():
                                                n_jobs=-1,
                                                cv=cv, random_state=1001)
 
-            # Here we go
             random_search.fit(df_train_x, df_train_y)
 
             df_test_x[feature + '_xgb'] = random_search.predict(df_test_x)
@@ -248,10 +247,10 @@ class Inicializacion():
         df = pd.merge(df, df_test_x[feature + '_xgb'].to_frame(), how='left', left_index=True, right_index=True)
         df[feature] = np.where((df[feature].isnull()), df[feature + '_xgb'], df[feature])
         df.drop(columns=[feature + '_xgb'], inplace=True)
-        # self.df_xgb = df
-        self.timer(start_time)  # timing ends here for "start_time" variable
 
-        if not self.paramsGenerales['usarModelo']:
+        self.timer(start_time)
+
+        if not self.paramsGenerales['esTest']:
             # Creamos la carpeta si no existe
 
             script_dir = os.path.dirname(__file__)
@@ -268,12 +267,12 @@ class Inicializacion():
 
             # Dictionary of best parameters
             best_pars = random_search.best_params_
-            print('\t\t\t\t Los mejores parametros son: ')
-            print('\t\t\t\t', best_pars)
-            print('\t\t\t\t ------------------------')
-            print('\t\t\t\t Best score: ')
-            print('\t\t\t\t', random_search.best_score_)
-            print('\t\t\t\t ------------------------')
+            print('         Los mejores parametros son: ')
+            print('        ', best_pars)
+            print('         ------------------------')
+            print('         Best score: ')
+            print('        ', random_search.best_score_)
+            print('         ------------------------')
 
             # Best XGB model that was found based on the metric score you specify
             best_model = random_search.best_estimator_
@@ -283,120 +282,101 @@ class Inicializacion():
         return df
 
     def encoding(self, df):
-        print("\t Encoding")
+        print("   Encoding")
         catlist = ['tipodepropiedad', 'ciudad', 'provincia']
+
         # 0 - Binario
         # 1 - One hot Encoding
         if self.paramsGenerales['encoder'] == 0:
-            if self.paramsGenerales['dropNan'] == 1:
-                # Binary Encoding
+            if self.paramsGenerales['esTest']:
+                binary_encoded = self.binary_enc.transform(df[catlist])
+                df = df.join(binary_encoded.add_suffix('bc'))
+            else:
                 self.binary_enc = ce.BinaryEncoder()
                 binary_encoded = self.binary_enc.fit_transform(df[catlist])
                 df = df.join(binary_encoded.add_suffix('bc'))
-            else:
-                binary_encoded = self.binary_enc.transform(df[catlist])
-                df = df.join(binary_encoded.add_suffix('bc'))
+
 
         elif self.paramsGenerales['encoder'] == 1:
-            if self.paramsGenerales['dropNan'] == 1:
-                # One hot Encoding
-                self.one_hot_enc = ce.OneHotEncoder()
-                one_hot_encoded = self.one_hot_enc.fit_transform(df[catlist])
+            if self.paramsGenerales['esTest']:
+                one_hot_encoded = self.one_hot_enc.transform(df[catlist])
                 df = df.join(one_hot_encoded.add_suffix('oh'))
             else:
-                one_hot_encoded = self.one_hot_enc.transform(df[catlist])
+                self.one_hot_enc = ce.OneHotEncoder()
+                one_hot_encoded = self.one_hot_enc.fit_transform(df[catlist])
                 df = df.join(one_hot_encoded.add_suffix('oh'))
 
         # TODO: Otros encodings?
         # TODO: AUC Scoring?
-
         return df
 
     def features_engineering(self, df):
-        print("\t Features engineering")
-        # Partir fecha
-        print("\t\t Separar fecha")
-        df = df.assign(
-            day=df.fecha.dt.day,
-            month=df.fecha.dt.month,
-            year=df.fecha.dt.year)
+        print("   Features engineering")
+
+        print("     Fecha")
+        df['anio'] = df.fecha.dt.year
+
+        # http://blog.davidkaleko.com/feature-engineering-cyclical-features.html
+        df['mes_sin'] = np.sin((df.fecha.dt.month - 1) * (2. * np.pi / 12))
+        df['mes_cos'] = np.cos((df.fecha.dt.month - 1) * (2. * np.pi / 12))
+
+        print("     Amennities")
+        df['amenities'] = df.piscina + df.gimnasio + df.usosmultiples
+
+        # df = df.assign(
+        #     day=df.fecha.dt.day,
+        #     month=df.fecha.dt.month,
+        #     year=df.fecha.dt.year)
+
         df = df.drop(columns='fecha')
+
         return df
 
     def metric_selection(self, df):
-        print("\t Metric selection")
-        feature_cols = df.columns.drop('precio')  # TODO: Q es nuestro outcome? Precio?
+        print("   Metric selection")
+        feature_cols = df.columns.drop('precio')
         train, valid, _ = self.get_data_splits(df)
 
-        print('\t\t f_classif')
-        # Empezamos a contar el tiempo
-        start_time = self.timer(None)  # timing starts from this point for "start_time" variable
-
+        print('     f_classif')
+        start_time = self.timer(None)
         selector = SelectKBest(f_classif, k=3)
 
         X_new = selector.fit_transform(train[feature_cols], train['precio'])
-        plt.bar(feature_cols, selector.scores_)
-        plt.xlabel('Features')
-        plt.xticks(rotation=90)
-        plt.ylabel('Importancia')
-        plt.title('Importancia Features con Univariate (f_classif)')
-        plt.show()
-        self.timer(start_time)  # timing ends here for "start_time" variable
+        self.print_metrics(feature_cols, selector.scores_, 'f_classif')
+        self.timer(start_time)
 
-        # print('\t\t chi2')
-        # # Empezamos a contar el tiempo
-        # start_time = self.timer(None)  # timing starts from this point for "start_time" variable
+        # print('     chi2')
+        # start_time = self.timer(None)
 
         # selector_chi2 = SelectKBest(chi2, k=3)
         # X_new = selector_chi2.fit_transform(train[feature_cols], train['precio'])
-        # plt.bar(feature_cols, selector_chi2.scores_)
-        # plt.xlabel('Features')
-        # plt.ylabel('Importancia')
-        # plt.title('Importancia Features con Univariate (chi2)')
-        # plt.show()
+        # self.print_metrics(feature_cols, selector_chi2.scores_, 'chi2')
         #
         # # Sin la primera
         # plt.bar(feature_cols[1:], selector_chi2.scores_[1:])
-        # plt.xlabel('Features')
-        # plt.xticks(rotation=90)
-        # plt.ylabel('Importancia')
-        # plt.title('Importancia Features con Univariate (chi2)')
-        # plt.show()
-        # self.timer(start_time)  # timing ends here for "start_time" variable
+        # self.print_metrics(feature_cols[1:], selector_chi2.scores_[1:], 'chi2 - Sin primera feature')
+        # self.timer(start_time)
 
-        print('\t\t mutual_info_classif')
-        # Empezamos a contar el tiempo
-        start_time = self.timer(None)  # timing starts from this point for "start_time" variable
+        print('     mutual_info_classif')
+        start_time = self.timer(None)
         selector_mutual = SelectKBest(mutual_info_classif, k=3)
 
         X_new = selector_mutual.fit_transform(train[feature_cols], train['precio'])
-        plt.bar(feature_cols, selector_mutual.scores_)
-        plt.xlabel('Features')
-        plt.xticks(rotation=90)
-        plt.ylabel('Importancia')
-        plt.title('Importancia Features con Univariate (mutual)')
-        plt.show()
-        self.timer(start_time)  # timing ends here for "start_time" variable
+        self.print_metrics(feature_cols, selector_mutual.scores_, 'mutual_info_classif')
+        self.timer(start_time)
 
-        print('\t\t L1 regularization (Lasso Regression)')
-        # Empezamos a contar el tiempo
-        start_time = self.timer(None)  # timing starts from this point for "start_time" variable
+        print('     L1 regularization (Lasso Regression)')
+        start_time = self.timer(None)
         train, valid, _ = self.get_data_splits(df)
         X, y = train[train.columns.drop("precio")], train['precio']
 
         # Set the regularization parameter C=1
         logistic = LogisticRegression(C=1, penalty="l1", random_state=7).fit(X, y)
-        plt.bar(feature_cols, logistic.coef_[0])
-        plt.xlabel('Features')
-        plt.xticks(rotation=90)
-        plt.ylabel('Importancia')
-        plt.title('Importancia Features con Lasso')
-        plt.show()
-        self.timer(start_time)  # timing ends here for "start_time" variable
+        self.print_metrics(feature_cols, logistic.coef_[0], 'regulatization c=1')
+        self.timer(start_time)
 
-        print('\t\t Random forest')
-        # Empezamos a contar el tiempo
-        start_time = self.timer(None)  # timing starts from this point for "start_time" variable
+        print('     Random forest')
+        start_time = self.timer(None)
         X, y = train[train.columns.drop("precio")], train['precio']
         val_X, val_y = valid[valid.columns.drop("precio")], valid['precio']
 
@@ -404,13 +384,16 @@ class Inicializacion():
         forest_model.fit(X, y)
         preds = forest_model.predict(val_X)
 
-        plt.bar(feature_cols, forest_model.feature_importances_)
+        self.print_metrics(feature_cols, forest_model.feature_importances_, 'Random forest')
+        self.timer(start_time)
+
+    def print_metrics(self, feature_cols, selector, modelo):
+        plt.bar(feature_cols, selector)
         plt.xlabel('Features')
         plt.xticks(rotation=90)
         plt.ylabel('Importancia')
-        plt.title('Importancia Features con RF')
+        plt.title('Importancia Features con Univariate (' + modelo + ')')
         plt.show()
-        self.timer(start_time)  # timing ends here for "start_time" variable
 
     def timer(self, start_time=None):
         if not start_time:
@@ -419,7 +402,7 @@ class Inicializacion():
         elif start_time:
             thour, temp_sec = divmod((datetime.now() - start_time).total_seconds(), 3600)
             tmin, tsec = divmod(temp_sec, 60)
-            print('\t\t\t Time taken: %i hours %i minutes and %s seconds.' % (thour, tmin, round(tsec, 2)))
+            print('       Time taken: %i hours %i minutes and %s seconds.' % (thour, tmin, round(tsec, 2)))
 
     def mostrar_nulls(self, df, feature):
         nulls = pd.DataFrame((df.isnull().sum().sort_values() / len(df) * 100).round(2), columns=['porcentaje de NaN'])
@@ -444,32 +427,27 @@ class Inicializacion():
             if not os.path.isdir(plots_dir):
                 os.makedirs(plots_dir)
 
-            if self.paramsGenerales['guardarImagenes']:
-                plt.savefig(plots_dir + file_name + '.png')
+            plt.savefig(plots_dir + file_name + '.png')
 
     def get_data_splits(self, df, valid_fraction=0.1):
-        # valid_fraction = 0.1
-        # print(type(df))
-        # print(df.shape())
-        # print(df.head(5))
-
         valid_size = int(len(df) * valid_fraction)
 
         train = df[:-valid_size * 2]
-        # valid size == test size, last two sections of the data
         valid = df[-valid_size * 2:-valid_size]
         test = df[-valid_size:]
 
         return train, valid, test
 
     def recast(self, df):
-        print("\t Recast final")
+        print("   Recast final")
         columns = []
         for x in df.columns:
             columns.append(x)
 
         try:
             columns.remove('precio')
+            columns.remove('mes_sin')
+            columns.remove('mes_cos')
         except:
             pass
 
@@ -481,4 +459,4 @@ class Inicializacion():
 
 
 if __name__ == '__main__':
-    preprocesamiento = Inicializacion()
+    preprocesamiento = Iniciliazacion()
