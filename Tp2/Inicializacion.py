@@ -97,11 +97,9 @@ class Inicializacion:
             # self.print_len(df)
         return df
 
-
     def print_len(self, df):
         if self.paramsGenerales['verbose']:
             print("Cantidad de registros: ", len(df))
-
 
     def casteos(self, df):
         print("   Cast")
@@ -182,7 +180,6 @@ class Inicializacion:
         # Todas - la que queremos predecir
         cols_subset = [x for x in cols if x != feature]
 
-
         start_time = self.timer(None)
 
         # TODO: Validar, si no existe el modelo, aunque quisiera usarlo no puede. Corregir eso.
@@ -228,12 +225,11 @@ class Inicializacion:
             if continua:
                 xgb = XGBRegressor()
                 scoring = self.paramsGenerales['scoring_regressor']
-                cv=5
+                cv = 5
             else:
                 xgb = XGBClassifier()
                 scoring = self.paramsGenerales['scoring_cat']
-                cv=skf.split(df_train_x, df_train_y)  # 'accuracy'  #
-
+                cv = skf.split(df_train_x, df_train_y)  # 'accuracy'  #
 
             random_search = RandomizedSearchCV(xgb, param_distributions=params, n_iter=param_comb, scoring=scoring,
                                                n_jobs=-1,
@@ -305,6 +301,19 @@ class Inicializacion:
                 self.one_hot_enc = ce.OneHotEncoder()
                 one_hot_encoded = self.one_hot_enc.fit_transform(df[catlist])
                 df = df.join(one_hot_encoded.add_suffix('oh'))
+
+        if not self.paramsGenerales['esTest']:
+            self.tiposPrincipales = df.tipodepropiedad.value_counts().sort_values(kind="quicksort", ascending=False).to_frame()
+            # print(self.tiposPrincipales.head(5).index.tolist())
+            self.tiposPrincipales = self.tiposPrincipales.head(5).index.tolist()
+            # print(self.tiposPrincipales)
+        print('   Encoding top 5 propiedades')
+        for tipo in self.tiposPrincipales:
+            print('     ' + tipo.replace(' ', '_'))
+            df['es_' + tipo.replace(' ', '_')] = df.tipodepropiedad == tipo
+
+        # TODO: Mix encoding
+        # TODO: Encoding con promedio
 
         # TODO: Otros encodings?
         # TODO: AUC Scoring?
