@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 #from sklearn.model_selection import cross_val_score
 from sklearn.model_selection import GridSearchCV
-#from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error
 from sklearn.neighbors import KNeighborsRegressor
 import numpy as np
 from Inicializacion import *
@@ -35,6 +35,8 @@ class Prediction:
     def train():
         self.model.fit(self.X, self.y)
         self.predicted = self.model.predict(self.test_df)
+        self.score = mean_absolute_error(self.model.predict(self.X), self.y)
+        print(self.score)
 
     def save(self):
         if self.param_grid==[]:
@@ -49,13 +51,3 @@ class Prediction:
         answer = pd.DataFrame(list(zip(self.test_ids, self.predicted)), columns =['id', 'predicted'])
         answer.to_csv('{}-{}.csv'.format(self.prefix, int(round(self.score))), sep=',', index=False)
 
-
-if __name__ == '__main__':
-    preprocesamiento = Inicializacion()
-    data = (preprocesamiento.df_final, preprocesamiento.df_final_test) 
-    distances = ['euclidean', 'manhattan', 'chebyshev', 'minkowski']
-    param_grid = {'n_neighbors': np.arange(15, 34, 2), 'metric': distances}
-    model = Prediction(data, KNeighborsRegressor(), param_grid, 'knntest')
-    model.train()
-    model.save()
-    model.submit()
