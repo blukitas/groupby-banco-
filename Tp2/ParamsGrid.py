@@ -42,7 +42,7 @@ class ParamsGrid:
         'gbr': (GradientBoostingRegressor(), 
             {'n_estimators':[250], 
             'max_depth':[3],
-            'learning_rate':[.1, .01, .001]
+            'learning_rate':[.1, .01, .001],
             'min_samples_leaf':[9],
             'min_samples_split':[9]})
     }
