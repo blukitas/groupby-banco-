@@ -34,9 +34,9 @@ class ParamsGrid:
             'max_depth': np.arange(3, 20, 3),
             'n_estimators': np.arange(100, 2000, 100),
             'learning_rate': [0.01]
-        }),
-        (KNeighborsRegressor(), {
-            'n_neighbors': np.arange(15, 34, 2),
-            'metric': ['euclidean', 'manhattan', 'chebyshev', 'minkowski']
         })
+        # (KNeighborsRegressor(), {
+        #     'n_neighbors': np.arange(15, 34, 2),
+        #     'metric': ['euclidean', 'manhattan', 'chebyshev', 'minkowski']
+        # })
     }
