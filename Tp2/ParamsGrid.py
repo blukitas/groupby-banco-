@@ -6,7 +6,7 @@ from xgboost import XGBClassifier
 
 class ParamsGrid:
     metodos = {
-        'metodo': (RandomForestRegressor(), {
+        'RandomForest': (RandomForestRegressor(), {
             'bootstrap': [True, False],  # method for sampling data points (with or without replacement)
             # 'criterion': 'mse',
             'max_depth': np.append(None, np.arange(0, 200, 10)),  # max number of levels in each decision tree
@@ -26,7 +26,7 @@ class ParamsGrid:
             # 'verbose': 0,
             # 'warm_start': False
         }),
-        'metodo': (XGBClassifier(), {
+        'xgb': (XGBClassifier(), {
             'min_child_weight': np.arange(5, 5),
             'gamma': np.arange(1, 1),
             'subsample': np.arange(0.8, 0.8),
@@ -35,7 +35,7 @@ class ParamsGrid:
             'n_estimators': np.arange(100, 2000, 100),
             'learning_rate': np.arange(0.01, 0.01)
         }),
-        'metodo': (KNeighborsRegressor(), {
+        'knn': (KNeighborsRegressor(), {
             'n_neighbors': np.arange(15, 34, 2),
             'metric': ['euclidean', 'manhattan', 'chebyshev', 'minkowski']
         })
