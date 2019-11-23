@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from xgboost import XGBClassifier
-
+from sklearn.ensemble import GradientBoostingRegressor
 
 class ParamsGrid:
     metodos = {
