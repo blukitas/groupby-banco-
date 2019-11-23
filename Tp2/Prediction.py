@@ -32,7 +32,7 @@ class Prediction:
         print(self.best_params)
         print(self.score)
 
-    def train():
+    def train(self):
         self.model.fit(self.X, self.y)
         self.predicted = self.model.predict(self.test_df)
         self.score = mean_absolute_error(self.model.predict(self.X), self.y)
