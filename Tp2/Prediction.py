@@ -32,10 +32,10 @@ class Prediction:
         print(self.best_params)
         print(self.score)
 
-    def train(self):
-        self.model.fit(self.X, self.y)
+    def train(self, cv=5):
+        cv_scores = cross_val_score(knn_cv, X, y, cv=cv, scoring='neg_mean_absolute_error') #print each cv score (accuracy) and average them
+        self.score = np.mean(cv_scores)
         self.predicted = self.model.predict(self.test_df)
-        self.score = mean_absolute_error(self.model.predict(self.X), self.y)
         print(self.score)
 
     def save(self):
