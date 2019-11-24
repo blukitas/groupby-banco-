@@ -332,7 +332,7 @@ class Inicializacion:
         print("     Amennities")
         df['amenities'] = df.piscina + df.gimnasio + df.usosmultiples
         print("     Ubicacion")
-        df['amenities'] = df.escuelascercanas + df.centroscomercialescercanos
+        df['ubicacion'] = df.escuelascercanas + df.centroscomercialescercanos
         print("     patio")
         cond = df.metrostotales > df.metroscubiertos
         df['patio'] = np.where(cond,1,0)
