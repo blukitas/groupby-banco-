@@ -27,20 +27,22 @@ class ParamsGrid:
             # 'warm_start': False
         }),
         'xgb': (XGBClassifier(), {
-            'min_child_weight': [5],
-            'gamma': [5],
-            'subsample': [0.8],
-            'colsample_bytree': [0.8],
+            'min_child_weight': np.arange(1,5,0.1),
+            'gamma':np.arange(0,3,0.2),
+            'colsample_bytree':[0.6],
+            'colsample_bynode':[0.6],
+            'colsample_bylevel':[0.6],
             'max_depth': np.arange(3, 20, 3),
-            'n_estimators': np.arange(100, 2000, 100),
-            'learning_rate': [0.01]
+            'n_estimators': np.arange(500, 2000, 100),
+            'learning_rate': [0.001,0.01,0.1,0.4,0.7,0.9,1,1.2],
+            'reg_alpha':np.arange(0.7,3,0.1),
         }),
         'knn': (KNeighborsRegressor(), {
             'n_neighbors': np.arange(15, 34, 2),
             'metric': ['euclidean', 'manhattan', 'chebyshev', 'minkowski']
         }),
-        'gbr': (GradientBoostingRegressor(), 
-            {'n_estimators':[250], 
+        'gbr': (GradientBoostingRegressor(),
+            {'n_estimators':[250],
             'max_depth':[3],
             'learning_rate':[.1, .01, .001],
             'min_samples_leaf':[9],
