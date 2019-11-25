@@ -334,8 +334,13 @@ class Inicializacion:
         print("     Ubicacion")
         df['ubicacion'] = df.escuelascercanas + df.centroscomercialescercanos
         print("     patio")
-        cond = df.metrostotales > df.metroscubiertos
-        df['patio'] = np.where(cond,1,0)
+        df['patio'] = df.metrostotales - df.metroscubiertos
+        print("     cantidad de ambientes(incluye baño)")
+        df['ambientes'] = df.habitaciones + df.banos + df.garages
+        print("     tamaño promedio del ambiente")
+        df['prom_amb'] = df.metroscubiertos / df.ambientes
+        print('     densidad de construccion')
+        df['construccion_density'] = df.metroscubiertos/df.metrostotales
 
 
         # df = df.assign(
