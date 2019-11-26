@@ -107,18 +107,15 @@ class Inicializacion:
         if self.paramsGenerales['verbose']:
             print("Cantidad de registros: ", len(df))
 
-    def casteos(self, df):
-        print("   Cast")
-        return df.astype({
-            #"piscina": 'int16',
-            #"usosmultiples": 'int16',
-            #"escuelascercanas": 'int16',
-            #"centroscomercialescercanos": 'int16',
-            #"gimnasio": 'int16',
-            #"metroscubiertos": 'int16',
-            #"metrostotales": 'int16',
-            "fecha": np.datetime64
-        })
+    def casteos(self,df):
+    	cols = [x for x in df.columns if x!='precio' and df[x].dtype.type==np.float64]
+    	for x in cols:
+    		if df[x].isnull().sum() > 0:
+    			pass
+    		else:
+    			df[x] = df[x].astype(np.int16)
+    	df['fecha'] = df['fecha'].astype(np.datetime64)
+    	return df
 
     def tratamiento_nulls(self, df):
         print("   Nulls")
@@ -498,4 +495,4 @@ class Inicializacion:
 
 
 if __name__ == '__main__':
-    preprocesamiento = Iniciliazacion()
+    preprocesamiento = Inicializacion()
