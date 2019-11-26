@@ -107,13 +107,13 @@ class Inicializacion:
     def casteos(self, df):
         print("   Cast")
         return df.astype({
-            #"piscina": 'int16',
-            #"usosmultiples": 'int16',
-            #"escuelascercanas": 'int16',
-            #"centroscomercialescercanos": 'int16',
-            #"gimnasio": 'int16',
-            #"metroscubiertos": 'int16',
-            #"metrostotales": 'int16',
+            "piscina": 'int16',
+            "usosmultiples": 'int16',
+            "escuelascercanas": 'int16',
+            "centroscomercialescercanos": 'int16',
+            "gimnasio": 'int16',
+            "metroscubiertos": 'int16',
+            "metrostotales": 'int16',
             "fecha": np.datetime64
         })
 
@@ -125,7 +125,7 @@ class Inicializacion:
 
     def drop_cols(self, df):
         print("     Drop cols")
-        return df.drop(columns=['lat', 'lng', 'titulo', 'descripcion', 'idzona', 'direccion'])
+        return df.drop(columns=['lat', 'lng', 'titulo', 'descripcion', 'idzona', 'direccion', 'id'])
         # return df.drop(columns=['lat', 'lng', 'descripcion', 'idzona', 'direccion'])
 
     def drop_nan(self, df):
