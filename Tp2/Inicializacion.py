@@ -20,7 +20,7 @@ class Inicializacion:
     # Encoder = 0 #Binario
     # Encoder = 1 #One Hot Encoding
     paramsGenerales = {
-        'verbose': False,  # Agregar mas informacion. Texto, imagenes, guardar.
+        'verbose': True,  # Agregar mas informacion. Texto, imagenes, guardar.
         'encoder': 0,  # Encoder. 0 Binario, 1 One hot encoding
         'esTest': False,  # Si es test no droppeamos nans
         # Para xgboost
@@ -60,6 +60,10 @@ class Inicializacion:
     def operaciones(self, df):
         print("Comenzando operaciones")
         self.print_len(df)
+        df = self.casteos(df)
+        self.print_len(df)
+        df = self.features_engineering(df)
+        self.print_len(df)
 
         df = self.tratamiento_nulls(df)
         self.print_len(df)
@@ -75,12 +79,6 @@ class Inicializacion:
         # Descartamos las columnas que fueron encodeadas
         df = df.drop(columns=['tipodepropiedad', 'provincia', 'ciudad'])
 
-        df = self.casteos(df)
-        self.print_len(df)
-
-        df = self.features_engineering(df)
-        self.print_len(df)
-
         df = self.predict_nulls(df)
         self.print_len(df)
 
@@ -95,6 +93,11 @@ class Inicializacion:
 
             # self.metric_selection(df)
             # self.print_len(df)
+
+        print('Columnas finales: ')
+        print(df.columns)
+        self.print_len(df)
+
         return df
 
     def print_len(self, df):
@@ -104,13 +107,13 @@ class Inicializacion:
     def casteos(self, df):
         print("   Cast")
         return df.astype({
-            "piscina": 'int16',
-            "usosmultiples": 'int16',
-            "escuelascercanas": 'int16',
-            "centroscomercialescercanos": 'int16',
-            "gimnasio": 'int16',
-            "metroscubiertos": 'int16',
-            "metrostotales": 'int16',
+            #"piscina": 'int16',
+            #"usosmultiples": 'int16',
+            #"escuelascercanas": 'int16',
+            #"centroscomercialescercanos": 'int16',
+            #"gimnasio": 'int16',
+            #"metroscubiertos": 'int16',
+            #"metrostotales": 'int16',
             "fecha": np.datetime64
         })
 
@@ -342,6 +345,20 @@ class Inicializacion:
         print('     densidad de construccion')
         df['construccion_density'] = df.metroscubiertos/df.metrostotales
 
+        # features basadas en str.contains sobre la descripción
+        zonas_exclusivas = ['Lomas de Chapultepec', 'Polanco', 'Bosques de las Lomas', 'Colinas del Bosque', 'Jardines del Pedregal',
+                   'Lomas Virreyes', 'Tlalpuente', 'Jardines en la Montaña', 'Bosques de Tlalpan']
+        refaccion = ['a reparar', 'a refaccionar']
+        lujo = ['marmol', 'mansión', 'lujo', 'jacuzzi']
+        vigilancia = ['vigilancia'] 
+        country = ['country', 'barrio privado']
+        
+        print("     Features basadas en la descripción")
+        df['zonas_exclusivas'] = df.descripcion.str.contains('|'.join(zonas_exclusivas), na=False, case=False)
+        df['refaccion'] = df.descripcion.str.contains('|'.join(refaccion), na=False, case=False)
+        df['lujo'] = df.descripcion.str.contains('|'.join(lujo), na=False, case=False)
+        df['vigilancia'] = df.descripcion.str.contains('|'.join(vigilancia), na=False, case=False)
+        df['country'] = df.descripcion.str.contains('|'.join(country), na=False, case=False)
 
         # df = df.assign(
         #     day=df.fecha.dt.day,
