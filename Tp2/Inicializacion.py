@@ -24,18 +24,23 @@ class Inicializacion:
         'encoder': 0,  # Encoder. 0 Binario, 1 One hot encoding
         'esTest': False,  # Si es test no droppeamos nans
         # Para xgboost
-        'min_child_weight': [5],
-        'gamma': [0.5],
-        'subsample': [0.8],
-        'colsample_bytree': [0.8],
-        'max_depth': [4],
-        'n_estimators': [50],
-        'learning_rate': [0.01],
         'scoring_regressor': 'neg_mean_squared_error',
         'scoring_cat': 'accuracy',
         'folds': 2,
         'param_comb': 1,
     }
+    param_xgboost = {'n_estimators':np.arange(1200,1400,100),
+        'learning_rate':[0.09,0.10,0.08,0.07],
+        'gamma':np.arange(0,1,0.2),
+        'colsample_bytree':[0.6],
+        'colsample_bynode':[0.6],
+        'colsample_bylevel':[0.6],
+        'max_depth':np.arange(6,10,1),
+        'min_child_weight':np.arange(0.5,5,0.3),
+        'reg_alpha':np.arange(1,2,0.1),
+        'random_state':[42],
+        'verbosity':[0]
+         }
 
     def __init__(self, params=[]):
         if params != []:
@@ -60,8 +65,10 @@ class Inicializacion:
     def operaciones(self, df):
         print("Comenzando operaciones")
         self.print_len(df)
+        
         df = self.casteos(df)
         self.print_len(df)
+        
         df = self.features_engineering(df)
         self.print_len(df)
 
@@ -71,16 +78,16 @@ class Inicializacion:
         df = self.encoding(df)
         self.print_len(df)
 
-        if not self.paramsGenerales['esTest']:
-            print("   drop nans in selected columns")
-            df = self.drop_nan(df)
-            self.print_len(df)
-
         # Descartamos las columnas que fueron encodeadas
         df = df.drop(columns=['tipodepropiedad', 'provincia', 'ciudad'])
 
         df = self.predict_nulls(df)
         self.print_len(df)
+
+        if not self.paramsGenerales['esTest']:
+            print("   drop nans in selected columns")
+            df = self.drop_nan(df)
+            self.print_len(df)
 
         print('Qué columnas tienen nas?')
         print(df.isna().any())
@@ -211,15 +218,7 @@ class Inicializacion:
             df_test_x = df_test_x.loc[:, cols_subset]
 
             # Hiperparametros - XGBoost
-            params = {
-                'min_child_weight': self.paramsGenerales['min_child_weight'],
-                'gamma': self.paramsGenerales['gamma'],
-                'subsample': self.paramsGenerales['subsample'],
-                'colsample_bytree': self.paramsGenerales['colsample_bytree'],
-                'max_depth': self.paramsGenerales['max_depth'],
-                'n_estimators': self.paramsGenerales['n_estimators'],
-                'learning_rate': self.paramsGenerales['learning_rate']
-            }
+
             folds = self.paramsGenerales['folds']
             param_comb = self.paramsGenerales['param_comb']
 
@@ -227,13 +226,13 @@ class Inicializacion:
             if continua:
                 xgb = XGBRegressor()
                 scoring = self.paramsGenerales['scoring_regressor']
-                cv = 5
+                cv = folds
             else:
                 xgb = XGBClassifier()
                 scoring = self.paramsGenerales['scoring_cat']
-                cv = skf.split(df_train_x, df_train_y)  # 'accuracy'  #
+                cv = skf # 'accuracy'  #
 
-            random_search = RandomizedSearchCV(xgb, param_distributions=params, n_iter=param_comb, scoring=scoring,
+            random_search = RandomizedSearchCV(xgb, param_distributions=self.param_xgboost, n_iter=param_comb, scoring=scoring,
                                                n_jobs=-1,
                                                cv=cv, random_state=1001)
 
@@ -347,7 +346,7 @@ class Inicializacion:
         # features basadas en str.contains sobre la descripción
         zonas_exclusivas = ['Lomas de Chapultepec', 'Polanco', 'Bosques de las Lomas', 'Colinas del Bosque', 'Jardines del Pedregal',
                    'Lomas Virreyes', 'Tlalpuente', 'Jardines en la Montaña', 'Bosques de Tlalpan']
-        refaccion = ['a reparar', 'a refaccionar']
+        refaccion = ['a reparar', 'a refaccionar','a restaurar']
         lujo = ['marmol', 'mansión', 'lujo', 'jacuzzi']
         vigilancia = ['vigilancia'] 
         country = ['country', 'barrio privado']
