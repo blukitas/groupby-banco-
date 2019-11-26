@@ -82,6 +82,9 @@ class Inicializacion:
         df = self.predict_nulls(df)
         self.print_len(df)
 
+        print('Qué columnas tienen nas?')
+        print(df.isna().any())
+
         # Drop nan que quedaron pos limpieza y tratamientos
         if not self.paramsGenerales['esTest']:
             print("   drop other nans")
@@ -107,13 +110,13 @@ class Inicializacion:
     def casteos(self, df):
         print("   Cast")
         return df.astype({
-            "piscina": 'int16',
-            "usosmultiples": 'int16',
-            "escuelascercanas": 'int16',
-            "centroscomercialescercanos": 'int16',
-            "gimnasio": 'int16',
-            "metroscubiertos": 'int16',
-            "metrostotales": 'int16',
+            #"piscina": 'int16',
+            #"usosmultiples": 'int16',
+            #"escuelascercanas": 'int16',
+            #"centroscomercialescercanos": 'int16',
+            #"gimnasio": 'int16',
+            #"metroscubiertos": 'int16',
+            #"metrostotales": 'int16',
             "fecha": np.datetime64
         })
 
@@ -125,7 +128,7 @@ class Inicializacion:
 
     def drop_cols(self, df):
         print("     Drop cols")
-        return df.drop(columns=['lat', 'lng', 'titulo', 'descripcion', 'idzona', 'direccion', 'id'])
+        return df.drop(columns=['id', 'lat', 'lng', 'titulo', 'descripcion', 'idzona', 'direccion'])
         # return df.drop(columns=['lat', 'lng', 'descripcion', 'idzona', 'direccion'])
 
     def drop_nan(self, df):
@@ -195,8 +198,7 @@ class Inicializacion:
         else:
 
             df_train = df.dropna()
-            df_train.drop(columns=['id'])
-
+            
             df_test = df.loc[df[feature].isnull() == True]
             df_test = (df_test.dropna(subset=cols_subset))
 
