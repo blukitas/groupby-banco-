@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 from xgboost import XGBRegressor
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.metrics import mean_absolute_error, accuracy_score
+from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from matplotlib import pyplot as plt
 from xgboost import plot_importance
@@ -30,8 +30,8 @@ class Regressor:
 
 	def accuracy_plot(self,y_val_pred,save=False):
 		predictions = [round(value) for value in y_val_pred]
-		self.acc = accuracy_score(np.exp(self.eval_set[1][1]),np.exp(y_val_pred))
-		print(acc)
+		self.mae = mean_absolute_error(np.exp(self.eval_set[1][1]),np.exp(y_val_pred))
+		print(mae)
 
 		results = self.model.evals_result()
 		epochs = len(results['validation_0']['mae'])
@@ -95,7 +95,8 @@ class Regressor:
 			cv=5
 			)
 		rgs.fit(self.x_train,self.y_train)
-		print()
+		print(rgs.best_score_)
+		self.y_pred = rgs.predict(self.x_test)
 
 
 	def save_prediction(self,y_test):
