@@ -65,8 +65,8 @@ class Inicializacion:
         df_test = pd.read_csv('data/test.csv')
 
         # Tiny dataset for debug purposes
-        df = df.sample(frac=0.001)
-        df_test = df_test.sample(frac=0.001)
+        #df = df.sample(frac=0.001)
+        #df_test = df_test.sample(frac=0.001)
         
         self.df_final = self.operaciones(df)
 
@@ -133,14 +133,14 @@ class Inicializacion:
             print("Cantidad de registros: ", len(df))
 
     def casteos(self,df):
-    	cols = [x for x in df.columns if x!='precio' and df[x].dtype.type==np.float64]
-    	for x in cols:
-    		if df[x].isnull().sum() > 0:
-    			pass
-    		else:
-    			df[x] = df[x].astype(np.int16)
-    	df['fecha'] = df['fecha'].astype(np.datetime64)
-    	return df
+        cols = [x for x in df.columns if x!='precio' and df[x].dtype.type==np.float64]
+        for x in cols:
+            if df[x].isnull().sum() > 0:
+                pass
+            else:
+                df[x] = df[x].astype(np.int16)
+        df['fecha'] = df['fecha'].astype(np.datetime64)
+        return df
 
     def tratamiento_nulls(self, df):
         print("   Nulls")
@@ -218,7 +218,6 @@ class Inicializacion:
             df_test_x[feature + '_xgb'] = random_search.predict(df_test_x)
 
         else:
-            print('ELSE DEL XGBOOST')
             df_train = df.dropna()
 
             df_test = df.loc[df[feature].isnull() == True]
@@ -376,16 +375,26 @@ class Inicializacion:
         return df
 
     def features_engineering_v2(self, df):
-    	print("     patio")
-    	df['patio'] = df.metrostotales - df.metroscubiertos
-    	print("     cantidad de ambientes(incluye baño)")
-    	df['ambientes'] = df.habitaciones + df.banos + df.garages
-    	print("     tamaño promedio del ambiente")
-    	df['prom_amb'] = df.metroscubiertos / df.ambientes
-    	print('     densidad de construccion')
-    	df['construccion_density'] = df.metroscubiertos/df.metrostotales
+        print("     patio")
+        df['patio'] = df.metrostotales - df.metroscubiertos
+        print("     cantidad de ambientes(incluye baño)")
+        df['ambientes'] = df.habitaciones + df.banos + df.garages
+        print('nulls en divisor:')
 
-    	return df 
+        # SACAR CUANDO FIXEEMOS EL XGBOOST que predice ceros...
+        df.ambientes.replace(0.0, df.ambientes.median(), inplace=True)
+        df.metroscubiertos.replace(0.0, df.metroscubiertos.median(), inplace=True)
+        df.metrostotales.replace(0.0, df.metrostotales.median(), inplace=True)
+
+        print("     tamaño promedio del ambiente")
+        df['prom_amb'] = df.metroscubiertos / df.ambientes
+        print('     densidad de construccion')
+        df['construccion_density'] = df.metroscubiertos/df.metrostotales
+
+        print(df.prom_amb.isnull().values.any())
+        print(df.construccion_density.isnull().values.any())
+        
+        return df 
 
 
 
@@ -500,10 +509,10 @@ class Inicializacion:
         cols = [x for x in df.columns if x!='precio' and x!='mes_sin' and x!='mes_cos' and x!='construccion_density' and x!='prom_amb' and df[x].dtype.type == np.float64]
         print(cols)
         for x in cols:
-        	if df[x].isnull().sum() > 0:
-        		pass
-        	else:
-        		df[x] = df[x].astype(np.int16)
+            if df[x].isnull().sum() > 0:
+                pass
+            else:
+                df[x] = df[x].astype(np.int16)
         return df
         #try:
         #    columns.remove('precio')
