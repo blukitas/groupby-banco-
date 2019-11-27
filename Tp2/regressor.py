@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 from xgboost import XGBRegressor
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.metrics import mean_absolute_error
+from sklearn.metrics import mean_absolute_error, accuracy_score
 from sklearn.model_selection import train_test_split
 from matplotlib import pyplot as plt
 from xgboost import plot_importance
@@ -26,12 +26,11 @@ class Regressor:
 		self.y_train = np.log(self.df_train['precio'])
 
 		self.x_train = self.df_train.loc[:,x_cols]
-		self.x_test = self.df_test.loc[:,x_cols]
-		
+		self.x_test = self.df_test.loc[:,x_cols]	
 
 	def accuracy_plot(self,y_val_pred,save=False):
 		predictions = [round(value) for value in y_val_pred]
-		self.acc = accuracy_score(self.eval_set[1][1],y_val_pred)
+		self.acc = accuracy_score(np.exp(self.eval_set[1][1]),np.exp(y_val_pred))
 		print(acc)
 
 		results = self.model.evals_result()
@@ -65,18 +64,45 @@ class Regressor:
 			colsample_bynode= 0.6,
 			colsample_bylevel= 0.6
 			)
-		self.model.fit(x_tr,y_tr,eval_set=self.eval_set,eval_metric='error',verbose=0)
+		self.model.fit(x_tr,y_tr,eval_set=self.eval_set,eval_metric='mae',verbose=0)
 		y_val_pred = self.model.predict(x_val)
 
 		self.accuracy_plot(y_val_pred)
 		plot_importance(self.model,max_num_features=10)
 
 		self.y_test = self.model.predict(self.x_test)
+	def randomizedGrid_and_CV(self):
+		param = {
+		'n_estimators':[1200],
+		'learning_rate':[0.07],
+		'gamma':[0],
+		'colsample_bytree':[0.6],
+		'colsample_bynode':[0.6],
+		'colsample_bylevel':[0.6],
+		'max_depth':[9],
+		'min_child_weight':[0.8],
+		'reg_alpha':[1.8],
+		'random_state':[42],
+		'verbosity':[0]
+		}
+
+		rgs = RandomizedSearchCV(
+			estimator=XGBRegressor(),
+			param_distributions=param,
+			n_iter=1,
+			random_state=42,
+			n_jobs=-1,
+			cv=5
+			)
+		rgs.fit(self.x_train,self.y_train)
+		print()
+
 
 	def save_prediction(self,y_test):
 		ids = self.df_test['id'].values
-		submit = pd.DataFrame({'id':ids,'precio':self.y_test})
+		final_pred = np.exp(self.y_pred)
+		submit = pd.DataFrame({'id':ids,'precio':final_pred})
 		submit.to_csv('submit{}.csv'.format(self.acc),index=False)
 
 if __name__ == '__main__':
-    predict = Regressor()
+	predict = Regressor()
