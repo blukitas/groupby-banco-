@@ -29,6 +29,19 @@ class Inicializacion:
         'folds': 2,
         'param_comb': 1,
     }
+
+    param_xgboost = {'max_depth': [8], 
+        'colsample_bylevel': [0.6], 
+        'colsample_bynode': [0.6], 
+        'reg_alpha': [1.3000000000000003], 
+        'n_estimators': [1300], 
+        'colsample_bytree': [0.6], 
+        'learning_rate': [0.09], 
+        'gamma': [0.6000000000000001], 
+        'min_child_weight': [3.5000000000000004], 
+        'random_state': [42], 
+        'verbosity': [0]}
+    '''
     param_xgboost = {'n_estimators':np.arange(1200,1400,100),
         'learning_rate':[0.09,0.10,0.08,0.07],
         'gamma':np.arange(0,1,0.2),
@@ -41,6 +54,7 @@ class Inicializacion:
         'random_state':[42],
         'verbosity':[0]
          }
+    '''
 
     def __init__(self, params=[]):
         if params != []:
@@ -50,6 +64,10 @@ class Inicializacion:
         df = pd.read_csv('data/train.csv')
         df_test = pd.read_csv('data/test.csv')
 
+        # Tiny dataset for debug purposes
+        df = df.sample(frac=0.001)
+        df_test = df_test.sample(frac=0.001)
+        
         self.df_final = self.operaciones(df)
 
         self.paramsGenerales['esTest'] = True
@@ -79,15 +97,12 @@ class Inicializacion:
         self.print_len(df)
 
         # Descartamos las columnas que fueron encodeadas
+        print("   drop nans in selected columns")
         df = df.drop(columns=['tipodepropiedad', 'provincia', 'ciudad'])
+        self.print_len(df)
 
         df = self.predict_nulls(df)
         self.print_len(df)
-
-        if not self.paramsGenerales['esTest']:
-            print("   drop nans in selected columns")
-            df = self.drop_nan(df)
-            self.print_len(df)
 
         print('Qué columnas tienen nas?')
         print(df.isna().any())
@@ -107,7 +122,7 @@ class Inicializacion:
         print('Columnas finales: ')
         print(df.columns)
         self.print_len(df)
-
+        
         return df
 
     def print_len(self, df):
@@ -200,19 +215,16 @@ class Inicializacion:
             df_test_x[feature + '_xgb'] = random_search.predict(df_test_x)
 
         else:
-
+            print('ELSE DEL XGBOOST')
             df_train = df.dropna()
-            
-            df_test = df.loc[df[feature].isnull() == True]
-            df_test = (df_test.dropna(subset=cols_subset))
 
+            df_test = df.loc[df[feature].isnull() == True]
             # Separamos los datos.
             df_train_x = df_train.loc[:, cols_subset]
             df_train_y = df_train[feature]
             df_test_y = df_test[feature]
 
-            df_test_x = df_test.dropna(subset=cols_subset)
-
+            df_test_x = df_test
             df_test_x = df_test_x.loc[:, cols_subset]
             df_test = pd.merge(df_test_x, df_test_y.to_frame(), how='inner', left_index=True, right_index=True)
             df_test_x = df_test_x.loc[:, cols_subset]
@@ -232,7 +244,7 @@ class Inicializacion:
                 scoring = self.paramsGenerales['scoring_cat']
                 cv = skf # 'accuracy'  #
 
-            random_search = RandomizedSearchCV(xgb, param_distributions=self.param_xgboost, n_iter=param_comb, scoring=scoring,
+            random_search = RandomizedSearchCV(xgb, param_distributions=Inicializacion.param_xgboost, n_iter=param_comb, scoring=scoring,
                                                n_jobs=-1,
                                                cv=cv, random_state=1001)
 
@@ -240,7 +252,7 @@ class Inicializacion:
 
             df_test_x[feature + '_xgb'] = random_search.predict(df_test_x)
 
-        # df = df con modelo aplicado.
+
         df = pd.merge(df, df_test_x[feature + '_xgb'].to_frame(), how='left', left_index=True, right_index=True)
         df[feature] = np.where((df[feature].isnull()), df[feature + '_xgb'], df[feature])
         df.drop(columns=[feature + '_xgb'], inplace=True)
