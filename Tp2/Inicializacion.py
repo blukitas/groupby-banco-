@@ -65,8 +65,8 @@ class Inicializacion:
         df_test = pd.read_csv('data/test.csv')
 
         # Tiny dataset for debug purposes
-        #df = df.sample(frac=0.001)
-        #df_test = df_test.sample(frac=0.001)
+        df = df.sample(frac=0.001)
+        df_test = df_test.sample(frac=0.001)
         
         self.df_final = self.operaciones(df)
 
@@ -161,6 +161,9 @@ class Inicializacion:
         print("     Fill metros")
 
         print("       Terreno")
+        cond_mts = df.metroscubiertos>df.metrostotales
+        df['metrostotales'] = np.where(cond_mts,df.metroscubiertos,df.metrostotales)
+        df['metroscubiertos'] = np.where(cond_mts,df.metrostotales,df.metroscubiertos)
         df1 = df[df.tipodepropiedad == 'Terreno'].fillna(0)
         df = df[df.tipodepropiedad != 'Terreno']
         df = pd.concat([df, df1])
