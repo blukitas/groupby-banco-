@@ -104,6 +104,9 @@ class Inicializacion:
         df = self.predict_nulls(df)
         self.print_len(df)
 
+        self.features_engineering_v2(df)
+        self.print_len(df)
+        
         print('Qué columnas tienen nas?')
         print(df.isna().any())
 
@@ -346,14 +349,7 @@ class Inicializacion:
         df['amenities'] = df.piscina + df.gimnasio + df.usosmultiples
         print("     Ubicacion")
         df['ubicacion'] = df.escuelascercanas + df.centroscomercialescercanos
-        print("     patio")
-        df['patio'] = df.metrostotales - df.metroscubiertos
-        print("     cantidad de ambientes(incluye baño)")
-        df['ambientes'] = df.habitaciones + df.banos + df.garages
-        print("     tamaño promedio del ambiente")
-        df['prom_amb'] = df.metroscubiertos / df.ambientes
-        print('     densidad de construccion')
-        df['construccion_density'] = df.metroscubiertos/df.metrostotales
+
 
         # features basadas en str.contains sobre la descripción
         zonas_exclusivas = ['Lomas de Chapultepec', 'Polanco', 'Bosques de las Lomas', 'Colinas del Bosque', 'Jardines del Pedregal',
@@ -378,6 +374,20 @@ class Inicializacion:
         df = df.drop(columns='fecha')
 
         return df
+
+    def features_engineering_v2(self, df):
+    	print("     patio")
+    	df['patio'] = df.metrostotales - df.metroscubiertos
+    	print("     cantidad de ambientes(incluye baño)")
+    	df['ambientes'] = df.habitaciones + df.banos + df.garages
+    	print("     tamaño promedio del ambiente")
+    	df['prom_amb'] = df.metroscubiertos / df.ambientes
+    	print('     densidad de construccion')
+    	df['construccion_density'] = df.metroscubiertos/df.metrostotales
+
+    	return df 
+
+
 
     def metric_selection(self, df):
         print("   Metric selection")
@@ -487,22 +497,26 @@ class Inicializacion:
 
     def recast(self, df):
         print("   Recast final")
-        columns = []
-        for x in df.columns:
-            columns.append(x)
-
-        try:
-            columns.remove('precio')
-            columns.remove('mes_sin')
-            columns.remove('mes_cos')
-        except:
-            pass
-
-        for x in range(len(columns)):
-            dtype = df[columns[x]].dtype.type
-            if dtype == np.int64 or dtype == np.float64:
-                df = df.astype({columns[x]: np.int16})
+        cols = [x for x in df.columns if x!='precio' and x!='mes_sin' and x!='mes_cos' and x!='construccion_density' and x!='prom_amb' and df[x].dtype.type == np.float64]
+        print(cols)
+        for x in cols:
+        	if df[x].isnull().sum() > 0:
+        		pass
+        	else:
+        		df[x] = df[x].astype(np.int16)
         return df
+        #try:
+        #    columns.remove('precio')
+        #    columns.remove('mes_sin')
+        #    columns.remove('mes_cos')
+        #except:
+            #pass
+
+        #for x in range(len(columns)):
+           # dtype = df[columns[x]].dtype.type
+          #  if dtype == np.int64 or dtype == np.float64:
+         #       df = df.astype({columns[x]: np.int16})
+        #return df
 
 
 if __name__ == '__main__':
