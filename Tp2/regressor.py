@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import pandas as pd
 import numpy as np
 import pickle
@@ -14,10 +17,12 @@ class Regressor:
 		#train_path = open('pickle','rb')
 		#test_path = open('path','rb')
 
-		#self.df_train = pickle.load(train_path)
-		#self.df_test = pickle.load(test_path)
-		self.df_train = pd.read_csv('00-df_final.csv')
-		self.df_test = pd.read_csv('01-df_final_test.csv')
+		self.df_train, self.df_test = pd.read_pickle('dfsInicializados.pickle')
+		print(self.df_train.shape)
+		print(self.df_test.shape)
+
+		#self.df_train = pd.read_csv('00-df_final.csv')
+		#self.df_test = pd.read_csv('01-df_final_test.csv')
 		self.prepare_data()
 		self.train_model_nocv()
 
@@ -31,7 +36,7 @@ class Regressor:
 	def accuracy_plot(self,y_val_pred,save=False):
 		predictions = [round(value) for value in y_val_pred]
 		self.mae = mean_absolute_error(np.exp(self.eval_set[1][1]),np.exp(y_val_pred))
-		print(mae)
+		print(self.mae)
 
 		results = self.model.evals_result()
 		epochs = len(results['validation_0']['mae'])
@@ -65,12 +70,15 @@ class Regressor:
 			colsample_bylevel= 0.6
 			)
 		self.model.fit(x_tr,y_tr,eval_set=self.eval_set,eval_metric='mae',verbose=0)
-		y_val_pred = self.model.predict(x_val)
+		self.y_val_pred = self.model.predict(x_val)
 
-		self.accuracy_plot(y_val_pred)
+		self.accuracy_plot(self.y_val_pred)
 		plot_importance(self.model,max_num_features=10)
+		plt.show()
 
 		self.y_test = self.model.predict(self.x_test)
+		self.save_prediction(self.y_test)
+
 	def randomizedGrid_and_CV(self):
 		param = {
 		'n_estimators':[1200],
@@ -100,10 +108,10 @@ class Regressor:
 
 
 	def save_prediction(self,y_test):
-		ids = self.df_test['id'].values
-		final_pred = np.exp(self.y_pred)
-		submit = pd.DataFrame({'id':ids,'precio':final_pred})
-		submit.to_csv('submit{}.csv'.format(self.acc),index=False)
+		ids = pd.read_csv('data/test.csv')['id'].values
+		final_pred = np.exp(self.y_test)
+		submit = pd.DataFrame({'id':ids,'target':final_pred})
+		submit.to_csv('submit.csv',index=False)
 
 if __name__ == '__main__':
 	predict = Regressor()
