@@ -74,8 +74,8 @@ class Inicializacion:
         self.df_final_test = self.operaciones(df_test)
 
         # Salida en csv, para evitar recalculos
-        self.df_final.to_csv('00-df_final.csv')
-        self.df_final_test.to_csv('01-df_final_test.csv')
+        self.df_final.to_csv('00-df_final.csv',index=False)
+        self.df_final_test.to_csv('01-df_final_test.csv',index=False)
 
     def getDataframes(self):
         return self.df_final, self.df_final_test
@@ -188,7 +188,7 @@ class Inicializacion:
         df = df[df.tipodepropiedad != 'Terreno comercial']
 
         df = pd.concat([df, df1])
-        df = df.sample(frac=1)  # No entendí eso que tul
+        
         return df
 
     def predict_nulls(self, df):
@@ -385,9 +385,9 @@ class Inicializacion:
         print('nulls en divisor:')
 
         # SACAR CUANDO FIXEEMOS EL XGBOOST que predice ceros...
-        df.ambientes.replace(0.0, df.ambientes.median(), inplace=True)
-        df.metroscubiertos.replace(0.0, df.metroscubiertos.median(), inplace=True)
-        df.metrostotales.replace(0.0, df.metrostotales.median(), inplace=True)
+        #df.ambientes.replace(0.0, df.ambientes.median(), inplace=True)
+        #df.metroscubiertos.replace(0.0, df.metroscubiertos.median(), inplace=True)
+        #df.metrostotales.replace(0.0, df.metrostotales.median(), inplace=True)
 
         print("     tamaño promedio del ambiente")
         df['prom_amb'] = df.metroscubiertos / df.ambientes
