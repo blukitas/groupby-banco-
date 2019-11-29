@@ -14,28 +14,31 @@ import os
 
 class Regressor:
 	def __init__(self):
-		#train_path = open('pickle','rb')
-		#test_path = open('path','rb')
 		print('Loading data...')
 		self.df_train,self.df_test = pd.read_pickle('dfsInicializados.pickle')
+		#self.df_train = pd.read_csv('df_final.csv')
+		#self.df_test = pd.read_csv('01-df_final_test.csv')
+		
+
 		print('El set de train tiene {} filas y {} columnas'.format(self.df_train.shape[0],self.df_train.shape[1]))
 		print('El set de test tiene {} filas y {} columnas'.format(self.df_test.shape[0],self.df_test.shape[1]))
-
 		self.do_pipeline()
 	
 
 	def do_pipeline(self):
 		lgb_train,lgb_eval = self.prepare_data()
 		y_test = self.train_model_nocv(lgb_train, lgb_eval)
-		#self.save_prediction(y_test)
+		self.save_prediction(y_test)
 
 
 	def prepare_data(self):
 		x_cols = [x for x in self.df_train.columns if x != 'precio' and x != 'id']
-		self.y_train = np.log(self.df_train['precio'])
+		self.y_train = np.log1p(self.df_train['precio'])
 
 		self.x_train = self.df_train.loc[:,x_cols]
 		self.x_test = self.df_test.loc[:,x_cols]
+		print(len(self.x_test))
+		print()
 
 		x_tr,x_eval,y_tr,y_val = train_test_split(self.x_train,self.y_train,test_size=0.15,shuffle=True)
 
@@ -47,11 +50,13 @@ class Regressor:
 
 	def train_model_nocv(self,lgb_train,lgb_eval):
 		params = {
-	#	'num_leaves':31,
+#		'num_leaves':15,
 		'boosting_type': 'gbdt',
 		'metric': 'mean_absolute_error',
-		'num_boost_round':500,
+#		'num_boost_round':4000,
 		'verbose': 0,
+		'learning_rate':0.22,
+#		'max_depth':10
 		}
 		
 
@@ -65,7 +70,7 @@ class Regressor:
 				valid_sets=[lgb_eval,lgb_train],
 				valid_names=['eval','train'],
 				verbose_eval=10,
-			#	learning_rates=lambda iter: 0.05 * (0.99 ** iter)
+			#	learning_rates=lambda iter: 0.3 * (0.99 ** iter)
 			)
 
 		"""booster = cv(
@@ -86,13 +91,15 @@ class Regressor:
 			pickle.dump(booster, f)
 
 		print('Making prediction and saving into a csv')
-		#y_test= booster.predict(self.x_test)
+		y_test= booster.predict(self.x_test)
 
-		#return y_test
+		return y_test
 
 	def save_prediction(self,y_test):
-		final_pred = np.exp(y_test)
+		final_pred = np.expm1(y_test)
+		print(len(final_pred))
 		ids = pd.read_csv('data/test.csv')['id'].values
+		print(len(ids))
 		submit = pd.DataFrame({'id':ids,'target':final_pred})
 		submit.to_csv('submit-lg.csv',index=False)
 	
