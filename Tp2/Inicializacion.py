@@ -30,15 +30,16 @@ class Inicializacion:
         'param_comb': 1,
     }
 
-    param_xgboost = {'max_depth': [8], 
-        'colsample_bylevel': [0.6], 
-        'colsample_bynode': [0.6], 
-        'reg_alpha': [1.3000000000000003], 
-        'n_estimators': [1300], 
-        'colsample_bytree': [0.6], 
-        'learning_rate': [0.09], 
-        'gamma': [0.6000000000000001], 
-        'min_child_weight': [3.5000000000000004], 
+    param_xgboost = {'max_depth': [3], 
+        'colsample_bylevel': [1], 
+        'colsample_bynode': [1], 
+        'reg_alpha': [0], 
+        'n_estimators': [300], 
+        'max_depth':[15],
+        'colsample_bytree': [1], 
+        'learning_rate': [0.1], 
+        'gamma': [0], 
+        'min_child_weight': [1], 
         'random_state': [42], 
         'verbosity': [0]}
     '''
@@ -150,7 +151,7 @@ class Inicializacion:
 
     def drop_cols(self, df):
         print("     Drop cols")
-        return df.drop(columns=['id', 'lat', 'lng', 'titulo', 'descripcion', 'idzona', 'direccion'])
+        return df.drop(columns=['lat', 'lng', 'titulo', 'descripcion', 'idzona', 'direccion'])
         # return df.drop(columns=['lat', 'lng', 'descripcion', 'idzona', 'direccion'])
 
     def drop_nan(self, df):
@@ -205,7 +206,7 @@ class Inicializacion:
         print("       fill with xgboost. Feature: ", {feature})
 
         # Columnas relevantes (Sin precio)
-        cols = [x for x in df.columns if x != 'precio']
+        cols = [x for x in df.columns if x != 'precio' and x!='id']
         # cols = [x for x in df.columns if x not in ['precio', 'titulo', 'tituloh']]
 
         # Todas - la que queremos predecir
