@@ -7,7 +7,10 @@ import pickle
 from sklearn.linear_model import ElasticNetCV, LassoCV, RidgeCV, BayesianRidge, HuberRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
+from sklearn.svm import SVR, LinearSVR
+from sklearn.preprocessing import RobustScaler
 from datetime import datetime
+
 class regression_models:
 	def __init__(self):
 		print('Loading data...')
@@ -27,7 +30,8 @@ class regression_models:
 		#y_test = self.train_rigdeCV(data)
 		#y_test = self.train_elasticNetCV(data)
 		#y_test = self.train_BayesianRidge(data)
-		y_test = self.train_HuberRegressor(data)
+		#y_test = self.train_HuberRegressor(data)
+		y_test = self.train_SVM(data)
 		self.save_prediction(y_test)
 
 
@@ -37,6 +41,11 @@ class regression_models:
 
 		x_train = self.df_train.loc[:,x_cols]
 		self.x_test = self.df_test.loc[:,x_cols]
+		
+		scaler = RobustScaler()
+		x_train = scaler.fit_transform(x_train)
+		self.x_test = scaler.transform(self.x_test)
+
 
 		x_tr,x_val,y_tr,y_val = train_test_split(x_train,y_train,test_size=0.15,shuffle=True)
 
@@ -247,6 +256,46 @@ class regression_models:
 		y_test= hr.predict(self.x_test)
 
 		return y_test
+
+	def train_SVM(self,data):
+		train,validacion = data
+		x_tr,y_tr = train
+		x_val,y_val = validacion
+		#print("El set de train tiene {} filas y {} columnas".format(x_tr.shape[0],x_tr.shape[1]))
+		#print("El set de validacion tiene {} filas y {} columnas".format(x_val.shape[0],x_val.shape[1]))
+
+		print('Start training LinearSVR...')
+		start_time = self.timer()
+
+		svr = LinearSVR(
+			max_iter=1000
+			)
+		svr.fit(x_tr,y_tr)
+		print("The R2 is: {}".format(svr.score(x_tr,y_tr)))
+#		print("The alpha choose by CV is:{}".format(svr.alpha_))
+		self.timer(start_time)
+
+		print("Making prediction on validation data")
+		y_val = np.expm1(y_val)
+		y_val_pred = np.expm1(svr.predict(x_val))
+		mae = mean_absolute_error(y_val,y_val_pred)
+		print("El mean absolute error de es {}".format(mae))
+
+		
+		print('Saving model into a pickle')
+		try:
+			os.mkdir('pickles')
+		except:
+			pass
+
+		with open('pickles/svrCV.pkl','wb') as f:
+			pickle.dump(svr, f)
+
+		print('Making prediction and saving into a csv')
+		y_test= svr.predict(self.x_test)
+
+		return y_test
+
 
 
 
