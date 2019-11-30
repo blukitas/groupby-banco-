@@ -4,7 +4,7 @@
 import pandas as pd
 import numpy as np
 import pickle 
-from sklearn.linear_model import ElasticNetCV, LassoCV, RidgeCV
+from sklearn.linear_model import ElasticNetCV, LassoCV, RidgeCV, BayesianRidge, HuberRegressor
 from sklearn.metrics import mean_absolute_error
 from sklearn.model_selection import train_test_split
 from datetime import datetime
@@ -25,7 +25,9 @@ class regression_models:
 		data = self.prepare_data()
 		#y_test = self.train_LassoCV(data)
 		#y_test = self.train_rigdeCV(data)
-		y_test = self.train_elasticNetCV(data)
+		#y_test = self.train_elasticNetCV(data)
+		#y_test = self.train_BayesianRidge(data)
+		y_test = self.train_HuberRegressor(data)
 		self.save_prediction(y_test)
 
 
@@ -162,6 +164,87 @@ class regression_models:
 
 		print('Making prediction and saving into a csv')
 		y_test= enet.predict(self.x_test)
+
+		return y_test
+
+	def train_BayesianRidge(self,data):
+		train,validacion = data
+		x_tr,y_tr = train
+		x_val,y_val = validacion
+		#print("El set de train tiene {} filas y {} columnas".format(x_tr.shape[0],x_tr.shape[1]))
+		#print("El set de validacion tiene {} filas y {} columnas".format(x_val.shape[0],x_val.shape[1]))
+
+		print('Start training BayesianRidge...')
+		start_time = self.timer()
+
+		bayesr = BayesianRidge(
+			normalize = True,
+			n_iter = 1000
+			)
+		bayesr.fit(x_tr,y_tr)
+		print("The R2 is: {}".format(bayesr.score(x_tr,y_tr)))
+#		print("The alpha choose by CV is:{}".format(bayesr.alpha_))
+		self.timer(start_time)
+
+		print("Making prediction on validation data")
+		y_val = np.expm1(y_val)
+		y_val_pred = np.expm1(bayesr.predict(x_val))
+		mae = mean_absolute_error(y_val,y_val_pred)
+		print("El mean absolute error de es {}".format(mae))
+
+		
+		print('Saving model into a pickle')
+		try:
+			os.mkdir('pickles')
+		except:
+			pass
+
+		with open('pickles/bayesrCV.pkl','wb') as f:
+			pickle.dump(bayesr, f)
+
+		print('Making prediction and saving into a csv')
+		y_test= bayesr.predict(self.x_test)
+
+		return y_test
+	
+	def train_HuberRegressor(self,data):
+		train,validacion = data
+		x_tr,y_tr = train
+		x_val,y_val = validacion
+		#print("El set de train tiene {} filas y {} columnas".format(x_tr.shape[0],x_tr.shape[1]))
+		#print("El set de validacion tiene {} filas y {} columnas".format(x_val.shape[0],x_val.shape[1]))
+
+		print('Start training HuberRegressor...')
+		start_time = self.timer()
+
+		hr = HuberRegressor(
+			max_iter = 1000,
+			epsilon = 1,
+			alpha = 0.1
+			)
+		hr.fit(x_tr,y_tr)
+		print("The R2 is: {}".format(hr.score(x_tr,y_tr)))
+#		print("The alpha choose by CV is:{}".format(hr.alpha_))
+		self.timer(start_time)
+
+		print("Making prediction on validation data")
+		y_val = np.expm1(y_val)
+		y_val_pred = np.expm1(hr.predict(x_val))
+		mae = mean_absolute_error(y_val,y_val_pred)
+		print("El mean absolute error de es {}".format(mae))
+
+		
+		print('Saving model into a pickle')
+		try:
+			os.mkdir('pickles')
+		except:
+			pass
+
+		with open('pickles/hrCV.pkl','wb') as f:
+			pickle.dump(hr, f)
+
+		print('Making prediction and saving into a csv')
+		y_test= hr.predict(self.x_test)
 
 		return y_test
 
