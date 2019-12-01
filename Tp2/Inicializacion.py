@@ -1,9 +1,11 @@
 ﻿# -*- coding: utf-8 -*-
 # %matplotlib inline
+
 import os
 import pickle
 from datetime import datetime
 from random import randint
+from numpy import inf
 
 import category_encoders as ce
 import matplotlib.pyplot as plt
@@ -96,8 +98,8 @@ class Inicializacion:
         df_test = pd.read_csv('data/test.csv')
 
         # Tiny dataset for debug purposes
-        # df = df.sample(frac=0.1)
-        # df_test = df_test.sample(frac=0.1)
+        # df = df.sample(frac=0.01)
+        # df_test = df_test.sample(frac=0.01)
 
         self.df_final = self.operaciones(df)
 
@@ -429,10 +431,15 @@ class Inicializacion:
         # df.metroscubiertos.replace(0.0, df.metroscubiertos.median(), inplace=True)
         # df.metrostotales.replace(0.0, df.metrostotales.median(), inplace=True)
 
-        # print("     tamaño promedio del ambiente")
+        print("     tamaño promedio del ambiente")
         # df['prom_amb'] = np.round(df.metroscubiertos / df.ambientes, 6)
-        # print('     densidad de construccion')
-        # df['construccion_density'] = np.round(df.metroscubiertos / df.metrostotales, 6)
+        # df[df.prom_amb == inf] = 0
+        # df[df.prom_amb == -inf] = 0
+        print('     densidad de construccion')
+        df[df.construccion_density] = np.round(df.metroscubiertos / df.metrostotales, 6)
+        df[df.construccion_density == inf] = 0
+
+
         #
         # print(df.prom_amb.isnull().values.any())
         # print(df.construccion_density.isnull().values.any())
