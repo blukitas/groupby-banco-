@@ -10,6 +10,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.svm import SVR, LinearSVR
 from sklearn.preprocessing import RobustScaler
 from sklearn.kernel_ridge import KernelRidge
+from sklearn.decomposition import PCA
+from sklearn.ensemble import BaggingRegressor, ExtraTreesRegressor, AdaBoostRegressor
 from datetime import datetime
 
 class regression_models:
@@ -18,23 +20,49 @@ class regression_models:
 		#self.df_train,self.df_test = pd.read_pickle('dfsInicializados.pickle')
 		self.df_train = pd.read_csv('00-df_final.csv')
 		self.df_test = pd.read_csv('01-df_final_test.csv')
+		#self.df_train =self.df_train.drop(columns=["Unnamed: 0"])
+		#self.df_test = self.df_test.drop(columns=["Unnamed: 0"])
 
 
 		print('El set de train tiene {} filas y {} columnas'.format(self.df_train.shape[0],self.df_train.shape[1]))
 		print('El set de test tiene {} filas y {} columnas'.format(self.df_test.shape[0],self.df_test.shape[1]))
 		self.do_pipeline()
-	
-
+		
+	def add_more_features(self,df):
+		df['patio'] = df.metrostotales - df.metroscubiertos
+		df['ambientes'] = df.habitaciones + df.banos + df.garages
+		#df['prom_amb'] = df.metroscubiertos / df.ambientes
+		#df['construccion_density'] = df.metroscubiertos/df.metrostotales
+		return df
 	def do_pipeline(self):
+		#self.df_train = self.add_more_features(self.df_train)
+		#self.df_test = self.add_more_features(self.df_test)
+		
+		print('El set de train tiene {} filas y {} columnas'.format(self.df_train.shape[0],self.df_train.shape[1]))
+		print('El set de test tiene {} filas y {} columnas'.format(self.df_test.shape[0],self.df_test.shape[1]))
+		
 		data = self.prepare_data()
-		#y_test = self.train_LassoCV(data)
-		#y_test = self.train_rigdeCV(data)
-		#y_test = self.train_elasticNetCV(data)
-		#y_test = self.train_BayesianRidge(data)
-		#y_test = self.train_HuberRegressor(data)
-		#y_test = self.train_SVM(data)
+		
+		y_test = self.train_LassoCV(data)
+		self.save_prediction(y_test,'Lasso')
+		y_test = self.train_rigdeCV(data)
+		self.save_prediction(y_test,'Ridge')
+		y_test = self.train_elasticNetCV(data)
+		self.save_prediction(y_test,'elastic')
+		y_test = self.train_BayesianRidge(data)
+		self.save_prediction(y_test,'BayesianRidge')
+		y_test = self.train_HuberRegressor(data)
+		self.save_prediction(y_test,'Huber')
+		y_test = self.train_SVM(data)
+		self.save_prediction(y_test,'SVM')
 		#y_test = self.train_krrl_linear(data)
-		self.save_prediction(y_test)
+		#self.save_prediction(y_test,'krrl')
+		y_test = self.bagging_regressor(data)
+		self.save_prediction(y_test, 'bagginRegressor')
+		y_test = self.ExtraTreesregressor(data)
+		self.save_prediction(y_test, 'ExtraTreesRegressor')
+		y_test = self.AdaBoost(data)
+		self.save_prediction(y_test,'AdaBoost')
 
 
 	def prepare_data(self):
@@ -44,9 +72,9 @@ class regression_models:
 		x_train = self.df_train.loc[:,x_cols]
 		self.x_test = self.df_test.loc[:,x_cols]
 		
-		scaler = RobustScaler()
-		x_train = scaler.fit_transform(x_train)
-		self.x_test = scaler.transform(self.x_test)
+		#scaler = RobustScaler()
+		#x_train = scaler.fit_transform(x_train)
+		#self.x_test = scaler.transform(self.x_test)
 
 
 		x_tr,x_val,y_tr,y_val = train_test_split(x_train,y_train,test_size=0.15,shuffle=True)
@@ -336,14 +364,133 @@ class regression_models:
 
 		return y_test
 
+	def bagging_regressor(self,data):
+		train,validacion = data
+		x_tr,y_tr = train
+		x_val,y_val = validacion
+		#print("El set de train tiene {} filas y {} columnas".format(x_tr.shape[0],x_tr.shape[1]))
+		#print("El set de validacion tiene {} filas y {} columnas".format(x_val.shape[0],x_val.shape[1]))
 
-	def save_prediction(self,y_test):
+		print('Start training BaggingRegressor...')
+		start_time = self.timer()
+
+		bg = BaggingRegressor(
+			oob_score=True,
+			verbose = 1
+			)
+		bg.fit(x_tr,y_tr)
+		print("The R2 is: {}".format(bg.score(x_tr,y_tr)))
+#		print("The alpha choose by CV is:{}".format(krrl.alpha_))
+		self.timer(start_time)
+
+		print("Making prediction on validation data")
+		y_val = np.expm1(y_val)
+		y_val_pred = np.expm1(bg.predict(x_val))
+		mae = mean_absolute_error(y_val,y_val_pred)
+		print("El mean absolute error de es {}".format(mae))
+
+		
+		print('Saving model into a pickle')
+		try:
+			os.mkdir('pickles')
+		except:
+			pass
+
+		with open('pickles/bg.pkl','wb') as f:
+			pickle.dump(bg, f)
+
+		print('Making prediction and saving into a csv')
+		y_test= bg.predict(self.x_test)
+
+		return y_test
+
+	def ExtraTreesregressor(self,data):
+		train,validacion = data
+		x_tr,y_tr = train
+		x_val,y_val = validacion
+		#print("El set de train tiene {} filas y {} columnas".format(x_tr.shape[0],x_tr.shape[1]))
+		#print("El set de validacion tiene {} filas y {} columnas".format(x_val.shape[0],x_val.shape[1]))
+
+		print('Start training ExtraTreesRegressor...')
+		start_time = self.timer()
+
+		extr = ExtraTreesRegressor(
+			n_estimators=100
+			)
+		extr.fit(x_tr,y_tr)
+		print("The R2 is: {}".format(extr.score(x_tr,y_tr)))
+#		print("The alpha choose by CV is:{}".format(krrl.alpha_))
+		self.timer(start_time)
+
+		print("Making prediction on validation data")
+		y_val = np.expm1(y_val)
+		y_val_pred = np.expm1(extr.predict(x_val))
+		mae = mean_absolute_error(y_val,y_val_pred)
+		print("El mean absolute error de es {}".format(mae))
+
+		
+		print('Saving model into a pickle')
+		try:
+			os.mkdir('pickles')
+		except:
+			pass
+
+		with open('pickles/extr.pkl','wb') as f:
+			pickle.dump(extr, f)
+
+		print('Making prediction and saving into a csv')
+		y_test= extr.predict(self.x_test)
+
+		return y_test
+	
+	def AdaBoost(self,data):
+		train,validacion = data
+		x_tr,y_tr = train
+		x_val,y_val = validacion
+		#print("El set de train tiene {} filas y {} columnas".format(x_tr.shape[0],x_tr.shape[1]))
+		#print("El set de validacion tiene {} filas y {} columnas".format(x_val.shape[0],x_val.shape[1]))
+
+		print('Start training AdaBoost...')
+		start_time = self.timer()
+
+		adr = AdaBoostRegressor(
+			n_estimators=100
+			)
+		adr.fit(x_tr,y_tr)
+		print("The R2 is: {}".format(adr.score(x_tr,y_tr)))
+#		print("The alpha choose by CV is:{}".format(krrl.alpha_))
+		self.timer(start_time)
+
+		print("Making prediction on validation data")
+		y_val = np.expm1(y_val)
+		y_val_pred = np.expm1(adr.predict(x_val))
+		mae = mean_absolute_error(y_val,y_val_pred)
+		print("El mean absolute error de es {}".format(mae))
+
+		
+		print('Saving model into a pickle')
+		try:
+			os.mkdir('pickles')
+		except:
+			pass
+
+		with open('pickles/adr.pkl','wb') as f:
+			pickle.dump(adr, f)
+
+		print('Making prediction and saving into a csv')
+		y_test= adr.predict(self.x_test)
+
+		return y_test
+
+
+
+	def save_prediction(self,y_test,model):
 		final_pred = np.expm1(y_test)
 
 		ids = self.df_test['id'].values
 
 		submit = pd.DataFrame({'id':ids,'target':final_pred})
-		submit.to_csv('submit-lassoCV.csv',index=False)
+		submit.to_csv('submit-'+model+'.csv',index=False)
 	
 	def timer(self, start_time=None):
 		if not start_time:
