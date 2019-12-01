@@ -298,7 +298,6 @@ class regression_models:
 		start_time = self.timer()
 
 		svr = LinearSVR(
-			max_iter=1800
 			)
 		svr.fit(x_tr,y_tr)
 		print("The R2 is: {}".format(svr.score(x_tr,y_tr)))
