@@ -97,8 +97,13 @@ class Regressor:
 	def save_prediction(self,y_test):
 		final_pred = np.expm1(y_test)
 		ids = self.df_test['id'].values
+		try:
+			os.mkdir('predictions')
+		except:
+			pass
+
 		submit = pd.DataFrame({'id':ids,'target':final_pred})
-		submit.to_csv('submit-lg.csv',index=False)
+		submit.to_csv('predictions/submit-'+model+'.csv',index=False)
 	
 	def timer(self, start_time=None):
 		if not start_time:
