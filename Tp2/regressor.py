@@ -14,7 +14,8 @@ from datetime import datetime
 class Regressor:
 	def __init__(self):
 		print('Loading data...')
-		self.df_train,self.df_test = pd.read_pickle('dfsInicializados.pickle')
+		self.df_train = pd.read_csv('00-df_final.csv')
+		self.df_test = pd.read_csv('01-df_final_test.csv')
 		
 		print('El set de train tiene {} filas y {} columnas'.format(self.df_train.shape[0],self.df_train.shape[1]))
 		print('El set de test tiene {} filas y {} columnas'.format(self.df_test.shape[0],self.df_test.shape[1]))
@@ -24,7 +25,7 @@ class Regressor:
 	def do_pipeline(self):
 		xgb_train,xgb_eval = self.prepare_data()
 		y_test = self.train_model_nocv(xgb_train, xgb_eval)
-		self.save_prediction(y_test)
+		self.save_prediction(y_test,'XGBoost')
 
 	def prepare_data(self):
 		x_cols = [x for x in self.df_train.columns if x != 'precio' and x != 'id']
@@ -142,12 +143,17 @@ class Regressor:
 		self.y_pred = rgs.predict(self.x_test)
 
 
-	def save_prediction(self,y_test):
-		ids = pd.read_csv('data/test.csv')['id'].values
-		final_pred = np.exp(y_test)
-		submit = pd.DataFrame({'id':ids,'target':final_pred})
-		submit.to_csv('submit-xgb.csv',index=False)
+	def save_prediction(self,y_test,model):
+		final_pred = np.expm1(y_test)
+		ids = self.df_test['id'].values
+		try:
+			os.mkdir('predictions')
+		except:
+			pass
 
+		submit = pd.DataFrame({'id':ids,'target':final_pred})
+		submit.to_csv('predictions/submit-'+model+'.csv',index=False)
+	
 	def timer(self, start_time=None):
 		if not start_time:
 			start_time = datetime.now()

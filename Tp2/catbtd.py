@@ -26,7 +26,7 @@ class Catboost:
 	def do_pipeline(self):
 		data = self.prepare_data()
 		y_test = self.train(data)
-		self.save_prediction(y_test)
+		self.save_prediction(y_test,'Catboost')
 
 
 	def prepare_data(self):
@@ -81,7 +81,7 @@ class Catboost:
 		return y_test
 
 		
-	def save_prediction(self,y_test):
+	def save_prediction(self,y_test,model):
 		final_pred = np.expm1(y_test)
 		ids = self.df_test['id'].values
 		try:
@@ -91,8 +91,7 @@ class Catboost:
 
 		submit = pd.DataFrame({'id':ids,'target':final_pred})
 		submit.to_csv('predictions/submit-'+model+'.csv',index=False)
-		submit = pd.DataFrame({'id':ids,'target':final_pred})
-		submit.to_csv('submit-catboost.csv',index=False)
+
 	
 	def timer(self, start_time=None):
 		if not start_time:

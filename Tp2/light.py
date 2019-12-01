@@ -27,7 +27,7 @@ class Regressor:
 	def do_pipeline(self):
 		lgb_train,lgb_eval = self.prepare_data()
 		y_test = self.train_model_nocv(lgb_train, lgb_eval)
-		self.save_prediction(y_test)
+		self.save_prediction(y_test,'LightGBM')
 
 
 	def prepare_data(self):
@@ -94,7 +94,7 @@ class Regressor:
 
 		return y_test
 
-	def save_prediction(self,y_test):
+	def save_prediction(self,y_test,model):
 		final_pred = np.expm1(y_test)
 		ids = self.df_test['id'].values
 		try:
