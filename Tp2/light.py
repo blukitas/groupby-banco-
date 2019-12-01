@@ -15,9 +15,8 @@ import os
 class Regressor:
 	def __init__(self):
 		print('Loading data...')
-		self.df_train,self.df_test = pd.read_pickle('dfsInicializados.pickle')
-		#self.df_train = pd.read_csv('df_final.csv')
-		#self.df_test = pd.read_csv('01-df_final_test.csv')
+		self.df_train = pd.read_csv('00-df_final.csv')
+		self.df_test = pd.read_csv('01-df_final_test.csv')
 		
 
 		print('El set de train tiene {} filas y {} columnas'.format(self.df_train.shape[0],self.df_train.shape[1]))
@@ -97,9 +96,7 @@ class Regressor:
 
 	def save_prediction(self,y_test):
 		final_pred = np.expm1(y_test)
-		print(len(final_pred))
-		ids = pd.read_csv('data/test.csv')['id'].values
-		print(len(ids))
+		ids = self.df_test['id'].values
 		submit = pd.DataFrame({'id':ids,'target':final_pred})
 		submit.to_csv('submit-lg.csv',index=False)
 	
