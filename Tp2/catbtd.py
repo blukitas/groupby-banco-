@@ -50,7 +50,8 @@ class Catboost:
 		print("Start training..")
 		start_time = self.timer()
 		catb = CatBoostRegressor(
-			eval_metric="MAE")
+			eval_metric="MAE",
+			num_boost_round=4000)
 		catb.fit(
 			x_tr,
 			y_tr,
@@ -83,6 +84,13 @@ class Catboost:
 	def save_prediction(self,y_test):
 		final_pred = np.expm1(y_test)
 		ids = self.df_test['id'].values
+		try:
+			os.mkdir('predictions')
+		except:
+			pass
+
+		submit = pd.DataFrame({'id':ids,'target':final_pred})
+		submit.to_csv('predictions/submit-'+model+'.csv',index=False)
 		submit = pd.DataFrame({'id':ids,'target':final_pred})
 		submit.to_csv('submit-catboost.csv',index=False)
 	
