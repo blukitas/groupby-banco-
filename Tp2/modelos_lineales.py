@@ -42,7 +42,7 @@ class regression_models:
 		print('El set de test tiene {} filas y {} columnas'.format(self.df_test.shape[0],self.df_test.shape[1]))
 		
 		data = self.prepare_data()
-		
+
 		y_test = self.train_LassoCV(data)
 		self.save_prediction(y_test,'Lasso')
 		y_test = self.train_rigdeCV(data)
@@ -135,7 +135,7 @@ class regression_models:
 
 		ridge = RidgeCV(
 			normalize=True,
-			alphas=np.arange(0.000001,0.0001,0.000001),
+			alphas=0.0000999,
 			cv=10
 			)
 		ridge.fit(x_tr,y_tr)
