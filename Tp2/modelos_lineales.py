@@ -13,6 +13,7 @@ from sklearn.kernel_ridge import KernelRidge
 from sklearn.decomposition import PCA
 from sklearn.ensemble import BaggingRegressor, ExtraTreesRegressor, AdaBoostRegressor
 from datetime import datetime
+import os
 
 class regression_models:
 	def __init__(self):
@@ -45,24 +46,24 @@ class regression_models:
 
 		y_test = self.train_LassoCV(data)
 		self.save_prediction(y_test,'Lasso')
-		y_test = self.train_rigdeCV(data)
-		self.save_prediction(y_test,'Ridge')
-		y_test = self.train_elasticNetCV(data)
-		self.save_prediction(y_test,'elastic')
-		y_test = self.train_BayesianRidge(data)
-		self.save_prediction(y_test,'BayesianRidge')
-		y_test = self.train_HuberRegressor(data)
-		self.save_prediction(y_test,'Huber')
-		y_test = self.train_SVM(data)
-		self.save_prediction(y_test,'SVM')
-		#y_test = self.train_krrl_linear(data)
-		#self.save_prediction(y_test,'krrl')
-		y_test = self.bagging_regressor(data)
-		self.save_prediction(y_test, 'bagginRegressor')
-		y_test = self.ExtraTreesregressor(data)
-		self.save_prediction(y_test, 'ExtraTreesRegressor')
-		y_test = self.AdaBoost(data)
-		self.save_prediction(y_test,'AdaBoost')
+		#y_test = self.train_rigdeCV(data)
+		#self.save_prediction(y_test,'Ridge')
+		#y_test = self.train_elasticNetCV(data)
+		#self.save_prediction(y_test,'elastic')
+		#y_test = self.train_BayesianRidge(data)
+		#self.save_prediction(y_test,'BayesianRidge')
+		#y_test = self.train_HuberRegressor(data)
+		#self.save_prediction(y_test,'Huber')
+		#y_test = self.train_SVM(data)
+		#self.save_prediction(y_test,'SVM')
+		##y_test = self.train_krrl_linear(data)
+		##self.save_prediction(y_test,'krrl')
+		#y_test = self.bagging_regressor(data)
+		#self.save_prediction(y_test, 'bagginRegressor')
+		#y_test = self.ExtraTreesregressor(data)
+		#self.save_prediction(y_test, 'ExtraTreesRegressor')
+		#y_test = self.AdaBoost(data)
+		#self.save_prediction(y_test,'AdaBoost')
 
 
 	def prepare_data(self):
@@ -487,9 +488,14 @@ class regression_models:
 		final_pred = np.expm1(y_test)
 
 		ids = self.df_test['id'].values
+		try:
+			os.mkdir('predictions')
+		except:
+			pass
+
 
 		submit = pd.DataFrame({'id':ids,'target':final_pred})
-		submit.to_csv('submit-'+model+'.csv',index=False)
+		submit.to_csv('predictions/submit-'+model+'.csv',index=False)
 	
 	def timer(self, start_time=None):
 		if not start_time:
