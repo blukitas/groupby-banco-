@@ -432,11 +432,11 @@ class Inicializacion:
         # df.metrostotales.replace(0.0, df.metrostotales.median(), inplace=True)
 
         print("     tamaño promedio del ambiente")
-        # df['prom_amb'] = np.round(df.metroscubiertos / df.ambientes, 6)
-        # df[df.prom_amb == inf] = 0
-        # df[df.prom_amb == -inf] = 0
+        df['prom_amb'] = np.round(df.metroscubiertos / df.ambientes, 6)
+        df[df.prom_amb == inf] = 0
+        df[df.prom_amb == -inf] = 0
         print('     densidad de construccion')
-        df[df.construccion_density] = np.round(df.metroscubiertos / df.metrostotales, 6)
+        df['construccion_density'] = np.round(df.metroscubiertos / df.metrostotales, 6)
         df[df.construccion_density == inf] = 0
 
 
