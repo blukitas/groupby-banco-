@@ -13,7 +13,6 @@ from sklearn.model_selection import train_test_split
 class Catboost:
 	def __init__(self):
 		print('Loading data...')
-		#self.df_train,self.df_test = pd.read_pickle('dfsInicializados.pickle')		
 		self.df_train = pd.read_csv('00-df_final.csv')
 		self.df_test = pd.read_csv('01-df_final_test.csv')
 
