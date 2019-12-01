@@ -96,8 +96,8 @@ class Inicializacion:
         df_test = pd.read_csv('data/test.csv')
 
         # Tiny dataset for debug purposes
-        # df = df.sample(frac=0.001)
-        # df_test = df_test.sample(frac=0.001)
+        # df = df.sample(frac=0.1)
+        # df_test = df_test.sample(frac=0.1)
 
         self.df_final = self.operaciones(df)
 
@@ -294,7 +294,7 @@ class Inicializacion:
                 cv = skf.split(df_train_x, df_train_y)  # 'accuracy'  # Prueba
 
             random_search = RandomizedSearchCV(xgb,
-                                               # param_distributions=Inicializacion.param_xgboost,
+                                               param_distributions=Inicializacion.param_xgboost,
                                                n_iter=param_comb,
                                                scoring=scoring,
                                                n_jobs=-1,
@@ -429,13 +429,13 @@ class Inicializacion:
         # df.metroscubiertos.replace(0.0, df.metroscubiertos.median(), inplace=True)
         # df.metrostotales.replace(0.0, df.metrostotales.median(), inplace=True)
 
-        print("     tamaño promedio del ambiente")
-        df['prom_amb'] = df.metroscubiertos / df.ambientes
-        print('     densidad de construccion')
-        df['construccion_density'] = df.metroscubiertos / df.metrostotales
-
-        print(df.prom_amb.isnull().values.any())
-        print(df.construccion_density.isnull().values.any())
+        # print("     tamaño promedio del ambiente")
+        # df['prom_amb'] = np.round(df.metroscubiertos / df.ambientes, 6)
+        # print('     densidad de construccion')
+        # df['construccion_density'] = np.round(df.metroscubiertos / df.metrostotales, 6)
+        #
+        # print(df.prom_amb.isnull().values.any())
+        # print(df.construccion_density.isnull().values.any())
 
         return df
 
