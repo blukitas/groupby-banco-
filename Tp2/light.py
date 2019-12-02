@@ -15,8 +15,13 @@ import os
 class Regressor:
 	def __init__(self):
 		print('Loading data...')
-		self.df_train = pd.read_csv('00-df_final.csv')
-		self.df_test = pd.read_csv('01-df_final_test.csv')
+		self.df_train = pd.read_csv('00-df_final_ok.csv')
+		self.df_train = self.df_train.dropna()
+		self.df_test = pd.read_csv('01-df_final_test_ok.csv')
+        
+		for x in ['zonas_exclusivas', 'refaccion', 'lujo', 'vigilancia', 'country', 'es_Casa', 'es_Apartamento', 'es_Casa_en_condominio', 'es_Terreno', 'es_Local_Comercial']:
+			self.df_train[x] = self.df_train[x].astype(np.int16)
+			self.df_test[x] = self.df_test[x].astype(np.int16)
 		
 
 		print('El set de train tiene {} filas y {} columnas'.format(self.df_train.shape[0],self.df_train.shape[1]))
