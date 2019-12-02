@@ -47,15 +47,15 @@ class Inicializacion:
 
     param_xgboost = {
         'max_depth': [3],
-        'colsample_bylevel': [1], 
-        'colsample_bynode': [1], 
-        'reg_alpha': [0], 
+        'colsample_bylevel': [1],
+        'colsample_bynode': [1],
+        'reg_alpha': [0],
         'n_estimators': [100],
         'colsample_bytree': [1],
-        'learning_rate': [0.1], 
-        'gamma': [0], 
-        'min_child_weight': [1], 
-        'random_state': [42], 
+        'learning_rate': [0.1],
+        'gamma': [0],
+        'min_child_weight': [1],
+        'random_state': [42],
         'verbosity': [0]
     }
 
@@ -247,7 +247,7 @@ class Inicializacion:
         print("       fill with xgboost. Feature: ", {feature})
 
         # Columnas relevantes (Sin precio)
-        cols = [x for x in df.columns if x != 'precio'] # and x!='id']
+        cols = [x for x in df.columns if x != 'precio']  # and x!='id']
         # cols = [x for x in df.columns if x not in ['precio', 'titulo', 'tituloh']]
 
         # Todas - la que queremos predecir
@@ -264,7 +264,7 @@ class Inicializacion:
 
         else:
             df_train = df.dropna()
-            df_train.drop(columns=['id']) # Prueba
+            df_train.drop(columns=['id'])  # Prueba
 
             df_test = df.loc[df[feature].isnull() == True]
             df_test = (df_test.dropna(subset=cols_subset))  # Prueba
@@ -432,19 +432,34 @@ class Inicializacion:
         # df.metrostotales.replace(0.0, df.metrostotales.median(), inplace=True)
 
         print("     tamaño promedio del ambiente")
-        df['prom_amb'] = np.round(df.metroscubiertos / df.ambientes, 6)
-        df[df.prom_amb == inf] = 0
-        df[df.prom_amb == -inf] = 0
+        df['prom_amb'] = df.ambientes
+        df['prom_amb'] = np.where(df.ambientes == 0, df.metroscubiertos, df.metroscubiertos / df.prom_amb)
+        self.mostrar_nulls(df)
         print('     densidad de construccion')
-        df['construccion_density'] = np.round(df.metroscubiertos / df.metrostotales, 6)
-        df[df.construccion_density == inf] = 0
+        df['construccion_density'] = df.metroscubiertos
+        df['construccion_density'] = np.where(df.metrostotales == 0, df.metroscubiertos, df.metroscubiertos / df.metrostotales)
 
 
-        #
+        df['ban_a_hab'] = df.habitaciones
+        df['ban_a_hab'] = np.where(df.habitaciones == 0, df.banos, df.banos / df.ban_a_hab)
+
+        # df['ban_a_hab'] = df.banos / df.habitaciones
+
         # print(df.prom_amb.isnull().values.any())
         # print(df.construccion_density.isnull().values.any())
 
         return df
+
+    def prevent_0_division(self, n):
+        # print
+        if n.metroscubiertos > 0 and n.ambientes > 0:
+            return n.metroscubiertos / n.ambientes
+        else:
+            return n.metroscubiertos
+        # if n[0] > 0 and n[1] > 0:
+        #     return n[0]/n[1]
+        # else:
+        #     return n[0]
 
     def metric_selection(self, df):
         print("   Metric selection")
