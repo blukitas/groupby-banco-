@@ -104,6 +104,8 @@ class Regressor:
 
 		self.timer(start_time)
 
+		xgb.plot_importance(booster,max_num_features=15)
+		plt.show()
 
 		print('Saving model into a pickle')
 		try:
