@@ -59,22 +59,24 @@ class Ensambles:
         xgboost = pickle.load(open("models/xgboost.pkl", 'rb'))
 
         lr = XGBRegressor()
-        clf_list = [bayesrCV, catboost, enetCV, hrCV, LassoCV, lightgbm, RidgeCV, svrCV, xgboost]
+        # clf_list = [bayesrCV, catboost, enetCV, hrCV, LassoCV, lightgbm, RidgeCV, svrCV, xgboost]
+        clf_list = []
         sclf = StackingClassifier(classifiers=clf_list,
                                   meta_classifier=lr)
         clf_list.append(sclf)
 
         label = [
-            'bayesrCV.pkl'
-            , 'catboost.pkl'
-            , 'enetCV.pkl'
-            , 'hrCV.pkl'
-            , 'LassoCV.pkl'
-            , 'lightgbm.pkl'
-            , 'RidgeCV.pkl'
-            , 'svrCV.pkl'
-            , 'xgboost.pkl'
-            , 'Stacking'
+            # 'bayesrCV.pkl'
+            # , 'catboost.pkl'
+            # , 'enetCV.pkl'
+            # , 'hrCV.pkl'
+            # , 'LassoCV.pkl'
+            # , 'lightgbm.pkl'
+            # , 'RidgeCV.pkl'
+            # , 'svrCV.pkl'
+            # , 'xgboost.pkl'
+            # ,
+            'Stacking'
         ]
 
         fig = plt.figure(figsize=(10, 8))
@@ -85,13 +87,17 @@ class Ensambles:
 
         clf_cv_mean = []
         clf_cv_std = []
-        for clf, label, grd in zip(clf_list, label, grid):
-            scores = cross_val_score(clf, X, y, cv=3, scoring='neg_mean_absolute_error')
-            print("Accuracy: %.2f (+/- %.2f) [%s]" % (scores.mean(), scores.std(), label))
-            clf_cv_mean.append(scores.mean())
-            clf_cv_std.append(scores.std())
-
-            clf.fit(X, y)
+        print(clf_list)
+        print(label)
+        print(grid)
+        sclf.fit_transform(X, y)
+        # for clf, label, grd in zip(clf_list, label, grid):
+        #     scores = cross_val_score(clf, X, y, cv=3, scoring='neg_mean_absolute_error')
+        #     print("Accuracy: %.2f (+/- %.2f) [%s]" % (scores.mean(), scores.std(), label))
+        #     clf_cv_mean.append(scores.mean())
+        #     clf_cv_std.append(scores.std())
+        #
+        #     clf.fit(X, y)
 
         self.timer(start_time)
 
@@ -104,7 +110,7 @@ class Ensambles:
         #self.PlotAccuracy(clf_cv_mean, clf_cv_std, label)
         #self.PlotLearningCurve(X, sclf, y)
 
-        self.TransformTest(clf)
+        self.TransformTest(sclf)
         # We can see that stacking achieves higher accuracy than individual classifiers and based on learning curves, it shows no signs of overfitting.
 
     def TransformTest(self, clf):
@@ -117,9 +123,7 @@ class Ensambles:
 
         self.test_ids = pd.read_csv('01-df_final_test_ok.csv')['id']
         answer = pd.DataFrame(list(zip(self.test_ids, self.predicted)), columns=['id', 'target'])
-        answer.to_csv('{}.csv'.format('z-result-StackingClassifier', sep=',', index=False)
-
-
+        answer.to_csv('{}.csv'.format('z-result-StackingClassifier', sep=',', index=False))
 
     def PlotLearningCurve(self, X, sclf, y):
         # plot learning curves
