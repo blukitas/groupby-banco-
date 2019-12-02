@@ -117,7 +117,7 @@ class Ensambles:
 
         self.test_ids = pd.read_csv('01-df_final_test_ok.csv')['id']
         answer = pd.DataFrame(list(zip(self.test_ids, self.predicted)), columns=['id', 'target'])
-        answer.to_csv('{}-{}.csv'.format('z-result-ensamble', int(round(self.score))), sep=',', index=False)
+        answer.to_csv('{}.csv'.format('z-result-StackingClassifier', sep=',', index=False)
 
 
 
