@@ -2,6 +2,7 @@ import datetime
 import itertools
 import os
 from random import randint
+from datetime import datetime
 
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
@@ -33,7 +34,11 @@ class Ensambles:
             self.paramsGenerales = params
 
         # https://github.com/vsmolyakov/experiments_with_python/blob/master/chp01/ensemble_methods.ipynb
-        df_train = pd.read_csv('00-df_final.csv')
+        df_train = pd.read_csv('00-df_final_ok.csv')
+        df_train = df_train.dropna()
+        
+        for x in ['zonas_exclusivas', 'refaccion', 'lujo', 'vigilancia', 'country', 'es_Casa', 'es_Apartamento', 'es_Casa_en_condominio', 'es_Terreno', 'es_Local_Comercial']:
+            df_train[x] = df_train[x].astype(np.int16)
         # df_train = df_train.sample(frac=0.1)
         # self.mostrar_nulls(df_train)
 
@@ -96,21 +101,23 @@ class Ensambles:
 
         # plt.show()
 
-        self.PlotAccuracy(clf_cv_mean, clf_cv_std, label)
-        self.PlotLearningCurve(X, sclf, y)
+        #self.PlotAccuracy(clf_cv_mean, clf_cv_std, label)
+        #self.PlotLearningCurve(X, sclf, y)
 
         self.TransformTest(clf)
         # We can see that stacking achieves higher accuracy than individual classifiers and based on learning curves, it shows no signs of overfitting.
 
     def TransformTest(self, clf):
-        test = pd.read_csv('00-df_final_test.csv')
+        test = pd.read_csv('01-df_final_test_ok.csv')
 
+        for x in ['zonas_exclusivas', 'refaccion', 'lujo', 'vigilancia', 'country', 'es_Casa', 'es_Apartamento', 'es_Casa_en_condominio', 'es_Terreno', 'es_Local_Comercial']:
+            test[x] = test[x].astype(np.int16)
         # self.predicted = clf.transform(test)
         self.predicted = clf.predict(test)
 
-        self.test_ids = pd.read_csv('01-df_final_test.csv')['id']
+        self.test_ids = pd.read_csv('01-df_final_test_ok.csv')['id']
         answer = pd.DataFrame(list(zip(self.test_ids, self.predicted)), columns=['id', 'target'])
-        answer.to_csv('{}-{}.csv'.format('z-result-ensamble', int(round(self.score))), sep=',', index=False)
+        answer.to_csv('{}.csv'.format('z-result-StackingClassifier', sep=',', index=False)
 
 
 

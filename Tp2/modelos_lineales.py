@@ -19,11 +19,11 @@ class regression_models:
 	def __init__(self):
 		print('Loading data...')
 		#self.df_train,self.df_test = pd.read_pickle('dfsInicializados.pickle')
-		self.df_train = pd.read_csv('00-df_final.csv')
-		self.df_test = pd.read_csv('01-df_final_test.csv')
+		self.df_train = pd.read_csv('00-df_final_ok.csv')
+		self.df_train = self.df_train.dropna()        
+		self.df_test = pd.read_csv('01-df_final_test_ok.csv')
 		#self.df_train =self.df_train.drop(columns=["Unnamed: 0"])
 		#self.df_test = self.df_test.drop(columns=["Unnamed: 0"])
-
 
 		print('El set de train tiene {} filas y {} columnas'.format(self.df_train.shape[0],self.df_train.shape[1]))
 		print('El set de test tiene {} filas y {} columnas'.format(self.df_test.shape[0],self.df_test.shape[1]))
@@ -136,7 +136,7 @@ class regression_models:
 
 		ridge = RidgeCV(
 			normalize=True,
-			alphas=0.0000999,
+			alphas=[0.0000999],
 			cv=10
 			)
 		ridge.fit(x_tr,y_tr)
