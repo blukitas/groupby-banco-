@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="b050600a-b855-4402-a245-d1c437d9e0c9" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.ipynb_checkpoints/PruebaLB-checkpoint.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/.ipynb_checkpoints/PruebaLB-checkpoint.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/00-df_final.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/01-df_final_test.csv" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Ensambles.py" beforeDir="false" afterPath="$PROJECT_DIR$/Ensambles.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Inicializacion.py" beforeDir="false" afterPath="$PROJECT_DIR$/Inicializacion.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PruebaLB++.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/PruebaLB.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/PruebaLB.ipynb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/dfsInicializados.pickle" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/modelo_pred_NI_t.ipynb" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/00-nulls-xgb_antiguedad.pickle" beforeDir="false" afterPath="$PROJECT_DIR$/models/00-nulls-xgb_antiguedad.pickle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/00-nulls-xgb_banos.pickle" beforeDir="false" afterPath="$PROJECT_DIR$/models/00-nulls-xgb_banos.pickle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/00-nulls-xgb_garages.pickle" beforeDir="false" afterPath="$PROJECT_DIR$/models/00-nulls-xgb_garages.pickle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/00-nulls-xgb_habitaciones.pickle" beforeDir="false" afterPath="$PROJECT_DIR$/models/00-nulls-xgb_habitaciones.pickle" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/01-cv_results_antiguedad.csv" beforeDir="false" afterPath="$PROJECT_DIR$/models/01-cv_results_antiguedad.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/01-cv_results_banos.csv" beforeDir="false" afterPath="$PROJECT_DIR$/models/01-cv_results_banos.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/01-cv_results_garages.csv" beforeDir="false" afterPath="$PROJECT_DIR$/models/01-cv_results_garages.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/01-cv_results_habitaciones.csv" beforeDir="false" afterPath="$PROJECT_DIR$/models/01-cv_results_habitaciones.csv" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pickles.zip" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/xgboost.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/xgboost.ipynb" afterDir="false" />
+    </list>
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectId" id="1TFxkfyvfKml9BOeHYoQR7kVrqQ" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="PropertiesComponent">
+    <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
+    <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="settings.editor.selected.configurable" value="File.Encoding" />
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\Lucas\Desktop\Organizacion de datos\TP1\groupby-banco-\Tp2\submits" />
+      <recent name="C:\Users\Lucas\Desktop\Organizacion de datos\TP1\groupby-banco-\Tp2\results" />
+    </key>
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="b050600a-b855-4402-a245-d1c437d9e0c9" name="Default Changelist" comment="" />
+      <created>1573069788960</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1573069788960</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State>
+              <option name="COLUMN_ORDER" />
+            </State>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
+  </component>
+</project>
